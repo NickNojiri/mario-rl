@@ -1,0 +1,12 @@
+# Top-level deps. requirements.txt is the frozen lock, generated after the import test passes.
+# Python 3.10, Linux (WSL). nes-py builds from sdist with gcc.
+
+# NumPy 2 breaks smb_env._x_position (uint8 * 256 raises under NEP 50 promotion).
+numpy<2
+gym==0.26.2
+nes-py==8.2.1
+gym-super-mario-bros==7.4.0
+opencv-python-headless
+# CPU build: no CUDA on this machine (AMD RX 5700 XT).
+torch
+pytest

@@ -1,0 +1,80 @@
+"""Run configuration. One dataclass, two presets, and a hash over the fields that change learning."""
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import asdict, dataclass, fields, replace
+
+
+@dataclass(frozen=True)
+class Config:
+    # --- environment ---
+    world: int = 1
+    stage: int = 1
+    actions: str = "right_only"  # "right_only" | "simple"
+    skip: int = 4
+    frame_size: int = 84
+    stack: int = 4
+    no_progress_steps: int = 150  # truncate if max x_pos hasn't improved in this many agent steps
+    noop_max: int = 30  # random 0..noop_max agent steps of NOOP after reset
+
+    # --- learning ---
+    gamma: float = 0.99
+    lr: float = 2.5e-4
+    batch_size: int = 32
+    buffer_size: int = 100_000
+    burnin: int = 10_000  # min transitions in buffer before learning
+    learn_every: int = 3
+    sync_every: int = 10_000
+    reward_scale: float = 1 / 15  # applied to summed skip-frame reward before storing
+    max_grad_norm: float = 10.0
+    eps_start: float = 1.0
+    eps_end: float = 0.1
+    eps_decay_steps: int = 1_000_000
+    seed: int = 0
+
+    # --- run bookkeeping (not part of the learning hash) ---
+    total_steps: int = 3_000_000
+    save_every: int = 100_000
+    save_buffer: bool = False
+    log_every_episodes: int = 20
+    device: str = "cpu"
+    torch_threads: int = 0  # 0 = torch default
+
+    def learning_hash(self) -> str:
+        d = {k: v for k, v in asdict(self).items() if k not in BOOKKEEPING_FIELDS}
+        return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:12]
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Config":
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in known})
+
+
+BOOKKEEPING_FIELDS = frozenset(
+    {"total_steps", "save_every", "save_buffer", "log_every_episodes", "device", "torch_threads"}
+)
+
+# Small enough to finish in about a minute on CPU, but every code path fires:
+# learning starts, target sync runs several times, checkpoint (with buffer) is written.
+SMOKE = Config(
+    buffer_size=5_000,
+    burnin=200,
+    sync_every=500,
+    eps_decay_steps=1_500,
+    total_steps=2_000,
+    save_every=1_000,
+    save_buffer=True,
+    log_every_episodes=1,
+)
+
+FULL = Config()
+
+PRESETS = {"smoke": SMOKE, "full": FULL}
+
+
+def get_preset(name: str, **overrides) -> Config:
+    return replace(PRESETS[name], **overrides)
