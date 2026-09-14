@@ -1,3 +1,8 @@
 runs/
 __pycache__/
 *.pyc
+
+# ROMs and save files never go in git
+*.gb
+*.gbc
+*.sav
