@@ -6,12 +6,16 @@ param(
     [string]$RunName = "dqn_1_1",
     [string]$Resume = ""
 )
-$trainArgs = if ($Resume) { "--resume $Resume" } else { "--preset full --run-name $RunName" }
-$logName = if ($Resume) { Split-Path (Split-Path $Resume -Parent) -Leaf } else { $RunName }
-New-Item -ItemType Directory -Force "runs\$logName" | Out-Null
+if ($Resume) {
+    $logName = Split-Path (Split-Path $Resume -Parent) -Leaf
+    $trainArgs = "--resume $Resume"
+} else {
+    $logName = $RunName
+    $trainArgs = "--preset full --run-name $RunName"
+}
+# Start-Process joins arguments with spaces, so keep every argument space-free and let the .sh do the work.
 # The hidden wsl.exe window keeps the WSL VM alive for the life of the run.
-Start-Process wsl.exe -WindowStyle Hidden -ArgumentList @(
-    "-d", "Ubuntu", "--cd", "/mnt/c/Users/17143/mario-rl", "--",
-    "bash", "-c", "bash scripts/wsl_run.sh python -u -W ignore train.py $trainArgs --save-buffer >> runs/$logName/stdout.log 2>&1"
+Start-Process wsl.exe -WindowStyle Hidden -ArgumentList (
+    "-d Ubuntu --cd /mnt/c/Users/17143/mario-rl -- bash scripts/train_detached.sh $logName $trainArgs"
 )
 Write-Output "started: train.py $trainArgs  (log: runs\$logName\stdout.log)"
