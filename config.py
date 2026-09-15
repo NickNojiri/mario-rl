@@ -36,6 +36,7 @@ class Config:
     # --- run bookkeeping (not part of the learning hash) ---
     total_steps: int = 3_000_000
     save_every: int = 100_000
+    snapshot_every: int = 250_000  # keep a separate weights-only checkpoint so any point in the run can be evaluated
     save_buffer: bool = False
     log_every_episodes: int = 20
     device: str = "cpu"
@@ -55,7 +56,7 @@ class Config:
 
 
 BOOKKEEPING_FIELDS = frozenset(
-    {"total_steps", "save_every", "save_buffer", "log_every_episodes", "device", "torch_threads"}
+    {"total_steps", "save_every", "snapshot_every", "save_buffer", "log_every_episodes", "device", "torch_threads"}
 )
 
 # Small enough to finish in about a minute on CPU, but every code path fires:
@@ -67,6 +68,7 @@ SMOKE = Config(
     eps_decay_steps=1_500,
     total_steps=2_000,
     save_every=1_000,
+    snapshot_every=1_000,
     save_buffer=True,
     log_every_episodes=1,
 )

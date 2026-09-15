@@ -94,13 +94,14 @@ def main():
         writer.writeheader()
 
     ckpt_path = run_dir / "latest.pt"
-    t_start = time.time()
+    # monotonic: WSL2 resyncs its wall clock with Windows, which made time.time() deltas go negative.
+    t_start = time.monotonic()
     try:
         while mario.curr_step < cfg.total_steps:
             mario.episode += 1
             state, _ = env.reset(seed=cfg.seed * 1_000_003 + mario.episode)
             ep_reward, ep_len, losses, qs = 0.0, 0, [], []
-            ep_t0, ep_step0 = time.time(), mario.curr_step
+            ep_t0, ep_step0 = time.monotonic(), mario.curr_step
             while True:
                 action = mario.act(state)
                 next_state, reward, terminated, truncated, info = env.step(action)
@@ -116,10 +117,13 @@ def main():
                 if mario.curr_step % cfg.save_every == 0:
                     mario.save(ckpt_path, save_buffer=cfg.save_buffer)
                     print(f"[ckpt] step={mario.curr_step} -> {ckpt_path}")
+                if mario.curr_step % cfg.snapshot_every == 0:
+                    snap = run_dir / "snapshots" / f"step_{mario.curr_step:08d}.pt"
+                    mario.save(snap, save_buffer=False)  # weights + optimizer only, ~27 MB
                 if terminated or truncated or mario.curr_step >= cfg.total_steps:
                     break
 
-            dt = time.time() - ep_t0
+            dt = time.monotonic() - ep_t0
             row = {
                 "episode": mario.episode, "step": mario.curr_step, "epsilon": round(mario.exploration_rate, 4),
                 "reward": ep_reward, "length": ep_len, "x_pos": info["x_pos"], "flag_get": int(info["flag_get"]),
@@ -127,7 +131,7 @@ def main():
                 "mean_loss": round(float(np.mean(losses)), 5) if losses else "",
                 "mean_q": round(float(np.mean(qs)), 4) if qs else "",
                 "steps_per_sec": round((mario.curr_step - ep_step0) / max(dt, 1e-9), 1),
-                "wall_time": round(time.time() - t_start, 1),
+                "wall_time": round(time.monotonic() - t_start, 1),
             }
             writer.writerow(row)
             log_file.flush()
