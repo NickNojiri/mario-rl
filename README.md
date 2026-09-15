@@ -29,6 +29,20 @@ python eval.py runs/dqn_1_1/latest.pt --episodes 30
 python eval.py runs/dqn_1_1/latest.pt --stage 2           # held-out stage
 ```
 
+## Results: run 1 (`dqn_1_1`, 3M steps, ~9.7 h on a Ryzen 7 7800X3D)
+
+| Eval (30 episodes, epsilon 0.01) | Mean x_pos | Flag rate |
+|---|---|---|
+| 1-1 | 1905 / ~3161 | 3% |
+| 1-2 (held out) | 386 | 0% |
+
+During training (epsilon 0.1), episodes getting past the 1-1 pipes rose from 24% to 80%, and the flag count went
+from 0 to 64 per 250k steps. Main failure: half of eval episodes stall with A held for 100% of the last 150 steps.
+SMB needs A released before it can jump again, and frames alone don't show that the button is held.
+Next run: add the previous action as a network input.
+
+Full write-up: [docs/mario_rl_report.pdf](docs/mario_rl_report.pdf)
+
 ## Decisions that aren't obvious from the code
 
 - **Truncation.** Timer expiry kills Mario, so it counts as `terminated`. gym's TimeLimit is 9,999,999 steps and never fires. The only truncation is the no-progress cutoff (`no_progress_steps`), and that is where bootstrapping through `truncated` matters.
