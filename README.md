@@ -31,6 +31,12 @@ python eval.py runs/dqn_1_1/latest.pt --stage 2           # held-out stage
 
 ## Results: run 1 (`dqn_1_1`, 3M steps, ~9.7 h on a Ryzen 7 7800X3D)
 
+![Run 1 DQN agent clearing World 1-1](docs/media/run1_flag_1-1.gif)
+
+*Run 1's agent reaching the flag on 1-1. This is eval episode seed 10005 at epsilon 0.01, replayed exactly
+with `python -m scripts.record_gif runs/dqn_1_1/latest.pt --seed 10005`. It is the best case, not the typical
+one: 1 of 30 eval episodes reached the flag.*
+
 | Eval (30 episodes, epsilon 0.01) | Mean x_pos | Flag rate |
 |---|---|---|
 | 1-1 | 1905 / ~3161 | 3% |

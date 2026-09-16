@@ -5,3 +5,4 @@
 *.png binary
 *.npz binary
 *.pt binary
+*.gif binary

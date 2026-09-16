@@ -17,6 +17,7 @@ networkx==3.4.2
 numpy==1.26.4
 opencv-python-headless==4.11.0.86
 packaging==26.3
+pillow==12.3.0
 pluggy==1.6.0
 pyglet==1.5.21
 pygments==2.21.0
