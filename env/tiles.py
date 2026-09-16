@@ -76,7 +76,9 @@ def read_tile_grid(ram) -> np.ndarray:
 
     if ram[0xB5] == 1:
         sx = int(ram[0x6D]) * 256 + int(ram[0x86]) - left
-        r, c = (int(ram[0xCE]) + 8 - 32) // 16, (sx + 8) // 16
+        # Player y in RAM sits 16px above the drawn sprite (checked against screenshots: standing Mario at
+        # y=176 is drawn on row 10, directly above ground row 11).
+        r, c = (int(ram[0xCE]) + 16 + 8 - 32) // 16, (sx + 8) // 16
         if 0 <= r < ROWS and 0 <= c < COLS:
             grid[r, c] = MARIO_ID
     return grid
@@ -91,6 +93,13 @@ def read_extras(ram, prev_action: int, n_actions: int) -> np.ndarray:
     out[n_actions + 2 + min(int(ram[0x1D]), N_FLOAT_STATES - 1)] = 1.0
     out[n_actions + 2 + N_FLOAT_STATES + min(int(ram[0x756]), N_POWERUPS - 1)] = 1.0
     return out
+
+
+def _find_smb(env):
+    """gym's EnvCompatibility reports itself as .unwrapped, so walk .env links to the real SuperMarioBrosEnv."""
+    while not hasattr(env, "ram"):
+        env = env.env
+    return env
 
 
 class TileMarioEnv:
@@ -131,22 +140,22 @@ class TileMarioEnv:
                 f"SuperMarioBros-{stage}-v0", apply_api_compatibility=True,
                 render_mode=self._render_mode, disable_env_checker=True,
             )
-            self._envs[stage] = (JoypadSpace(base, self.action_set), base)
+            self._envs[stage] = (JoypadSpace(base, self.action_set), base, _find_smb(base))
         return self._envs[stage]
 
     @property
     def ram(self):
-        return self._base.unwrapped.ram
+        return self._smb.ram
 
     @property
     def screen(self) -> np.ndarray:
-        return self._base.unwrapped.screen
+        return self._smb.screen
 
     def reset(self, seed: int | None = None, stage: str | None = None):
         if seed is not None:
             self._rng = np.random.default_rng(seed)
         self.stage = stage or self.stages[int(self._rng.integers(len(self.stages)))]
-        self._joypad, self._base = self._get(self.stage)
+        self._joypad, self._base, self._smb = self._get(self.stage)
         _, info = self._joypad.reset()
         for _ in range(int(self._rng.integers(0, self._noop_max + 1))):
             _, terminated, truncated, info = self._raw_skip(_NES_NOOP, use_joypad=False)
@@ -156,7 +165,7 @@ class TileMarioEnv:
         grid = read_tile_grid(self.ram)
         self._grids = [grid] * self._stack
         self._prev_action = -1
-        self._coins = int(self._base.unwrapped._coins)  # same source as info["coins"]
+        self._coins = int(self._smb._coins)  # same source as info["coins"]
         self._best_x = None
         self._since_progress = 0
         self._ep = {"stage": self.stage, "reward": 0.0, "game_reward": 0.0, "length": 0, "coins": 0, "x_pos": 0,
@@ -198,7 +207,7 @@ class TileMarioEnv:
         return self._obs(), reward, terminated, truncated, info
 
     def close(self):
-        for joypad, _ in self._envs.values():
+        for joypad, _, _ in self._envs.values():
             joypad.close()
         self._envs.clear()
 
