@@ -80,3 +80,76 @@ PRESETS = {"smoke": SMOKE, "full": FULL}
 
 def get_preset(name: str, **overrides) -> Config:
     return replace(PRESETS[name], **overrides)
+
+
+# ============================================================================ PPO on tile grids, many stages
+@dataclass(frozen=True)
+class PPOConfig:
+    # --- environment ---
+    train_stages: tuple = ()  # empty -> env.tiles.TRAIN_STAGES
+    test_stages: tuple = ()  # empty -> env.tiles.TEST_STAGES
+    actions: str = "simple"
+    skip: int = 4
+    stack: int = 4
+    no_progress_steps: int = 200
+    noop_max: int = 30
+    coin_reward: float = 15.0  # raw game units; ~1 agent step of full-speed running
+    flag_reward: float = 150.0
+
+    # --- learning ---
+    n_envs: int = 12
+    rollout_len: int = 256
+    epochs: int = 4
+    minibatches: int = 6
+    gamma: float = 0.99
+    gae_lambda: float = 0.95
+    clip: float = 0.2
+    lr: float = 2.5e-4
+    ent_coef: float = 0.01
+    vf_coef: float = 0.5
+    max_grad_norm: float = 0.5
+    reward_scale: float = 1 / 15
+    seed: int = 0
+
+    # --- bookkeeping ---
+    total_steps: int = 20_000_000
+    save_every: int = 250_000
+    snapshot_every: int = 1_000_000
+    device: str = "cpu"
+    torch_threads: int = 4
+
+    def env_kwargs(self, stages) -> dict:
+        return dict(stages=list(stages), actions=self.actions, skip=self.skip, stack=self.stack,
+                    no_progress_steps=self.no_progress_steps, noop_max=self.noop_max,
+                    coin_reward=self.coin_reward, flag_reward=self.flag_reward)
+
+    def resolved_stages(self) -> tuple[list, list]:
+        from env.tiles import TEST_STAGES, TRAIN_STAGES
+        return list(self.train_stages or TRAIN_STAGES), list(self.test_stages or TEST_STAGES)
+
+    def learning_hash(self) -> str:
+        d = {k: v for k, v in asdict(self).items() if k not in PPO_BOOKKEEPING_FIELDS}
+        return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:12]
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "PPOConfig":
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: (tuple(v) if isinstance(v, list) else v) for k, v in d.items() if k in known})
+
+
+PPO_BOOKKEEPING_FIELDS = frozenset({"total_steps", "save_every", "snapshot_every", "device", "torch_threads"})
+
+PPO_PRESETS = {
+    # Every code path in about a minute: vec env, truncation bootstrap, updates, checkpoint, snapshot.
+    "ppo_smoke": PPOConfig(train_stages=("1-1", "1-2"), test_stages=("1-3",), n_envs=4, rollout_len=64,
+                           minibatches=4, total_steps=2_048, save_every=512, snapshot_every=1_024,
+                           no_progress_steps=40, torch_threads=2),
+    "ppo_full": PPOConfig(),
+}
+
+
+def get_ppo_preset(name: str, **overrides) -> PPOConfig:
+    return replace(PPO_PRESETS[name], **overrides)

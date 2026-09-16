@@ -43,6 +43,27 @@ Next run: add the previous action as a network input.
 
 Full write-up: [docs/mario_rl_report.pdf](docs/mario_rl_report.pdf)
 
+## v2: PPO on tile grids across real stages (in progress)
+
+Goal: learn Mario's *mechanics*, measured on real levels the agent never trains on.
+
+- **Observation:** a 13x16 grid of the game's own tile ids read from RAM, plus enemies, Mario, the previous
+  action (so "A is already held" is visible), speed, and air/ground state. It's the same vocabulary on every
+  level, and a future procedural generator can emit it too.
+- **Stages:** 22 real stages for training, 5 held out (`2-1, 3-3, 4-2, 5-4, 7-1`). Water levels and looping
+  maze castles are excluded.
+- **Reward:** game reward + a small coin bonus (about one step of running) + a flag bonus. Both are config values,
+  so their effect can be tested with an ablation.
+- **Algorithm:** PPO with 12 parallel emulators; truncated episodes bootstrap from the real final observation.
+
+```bash
+python train_ppo.py --preset ppo_smoke
+python train_ppo.py --preset ppo_full --run-name ppo_tiles_1
+python eval_stages.py runs/ppo_tiles_1/latest.pt
+python eval_stages.py --random --config runs/ppo_tiles_1/config.json
+python -m scripts.render_tiles --stage 1-1      # check the RAM tile decoding by eye
+```
+
 ## Decisions that aren't obvious from the code
 
 - **Truncation.** Timer expiry kills Mario, so it counts as `terminated`. gym's TimeLimit is 9,999,999 steps and never fires. The only truncation is the no-progress cutoff (`no_progress_steps`), and that is where bootstrapping through `truncated` matters.
