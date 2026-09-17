@@ -1,4 +1,4 @@
-"""PPO over tile-grid observations."""
+"""PPO over tile-grid observations (plus per-enemy motion features for obs_version 3)."""
 from __future__ import annotations
 
 import random
@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from env.tiles import COLS, ROWS, VOCAB
+from env.tiles import COLS, N_ENEMY_FEATS, N_ENEMY_TYPES, ROWS, VOCAB
 
 
 def _init(layer: nn.Module, gain: float = np.sqrt(2)) -> nn.Module:
@@ -18,10 +18,12 @@ def _init(layer: nn.Module, gain: float = np.sqrt(2)) -> nn.Module:
 
 
 class TilePolicy(nn.Module):
-    """Embed tile ids -> small CNN over the 13x16 grid -> concat extras -> policy logits and value."""
+    """Embed tile ids -> small CNN over the 13x16 grid -> concat extras (and pooled enemy encodings) ->
+    policy logits and value. forward() takes the observation dict as tensors."""
 
-    def __init__(self, n_actions: int, stack: int, n_extras: int, emb_dim: int = 8):
+    def __init__(self, n_actions: int, stack: int, n_extras: int, emb_dim: int = 8, obs_version: int = 2):
         super().__init__()
+        self.obs_version = obs_version
         self.embed = nn.Embedding(VOCAB, emb_dim)
         self.conv = nn.Sequential(
             _init(nn.Conv2d(stack * emb_dim, 32, 3, padding=1)), nn.ReLU(),
@@ -29,16 +31,30 @@ class TilePolicy(nn.Module):
             _init(nn.Conv2d(64, 64, 3, padding=1)), nn.ReLU(),
             nn.Flatten(),
         )
-        conv_out = 64 * ((ROWS + 1) // 2) * ((COLS + 1) // 2)
-        self.fc = nn.Sequential(_init(nn.Linear(conv_out + n_extras, 256)), nn.ReLU())
+        head_in = 64 * ((ROWS + 1) // 2) * ((COLS + 1) // 2) + n_extras
+        if obs_version >= 3:
+            # One shared encoder per enemy slot, then max+mean pooling: order-free, any slot count.
+            self.enemy_id_embed = nn.Embedding(N_ENEMY_TYPES + 1, 8)
+            self.enemy_state_embed = nn.Embedding(256, 4)
+            self.enemy_mlp = nn.Sequential(_init(nn.Linear(8 + 4 + N_ENEMY_FEATS, 64)), nn.ReLU(),
+                                           _init(nn.Linear(64, 64)), nn.ReLU())
+            head_in += 128
+        self.fc = nn.Sequential(_init(nn.Linear(head_in, 256)), nn.ReLU())
         self.pi = _init(nn.Linear(256, n_actions), gain=0.01)
         self.v = _init(nn.Linear(256, 1), gain=1.0)
 
-    def forward(self, tiles: torch.Tensor, extras: torch.Tensor):
+    def forward(self, obs: dict):
+        tiles = obs["tiles"]
         b, s, h, w = tiles.shape
         x = self.embed(tiles.long())  # [B, S, H, W, E]
         x = x.permute(0, 1, 4, 2, 3).reshape(b, s * x.shape[-1], h, w)
-        x = self.fc(torch.cat([self.conv(x), extras], dim=1))
+        parts = [self.conv(x), obs["extras"]]
+        if self.obs_version >= 3:
+            e = torch.cat([self.enemy_id_embed(obs["enemy_ids"].long()),
+                           self.enemy_state_embed(obs["enemy_states"].long()), obs["enemies"]], dim=-1)
+            e = self.enemy_mlp(e)  # [B, slots, 64]
+            parts += [e.max(dim=1).values, e.mean(dim=1)]
+        x = self.fc(torch.cat(parts, dim=1))
         return self.pi(x), self.v(x).squeeze(-1)
 
 
@@ -66,18 +82,18 @@ class PPOAgent:
         self.cfg = cfg
         self.n_actions = n_actions
         self.device = torch.device(cfg.device)
-        self.net = TilePolicy(n_actions, cfg.stack, n_extras).to(self.device)
+        self.net = TilePolicy(n_actions, cfg.stack, n_extras, obs_version=getattr(cfg, "obs_version", 2)).to(
+            self.device)
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=cfg.lr, eps=1e-5)
         self.global_step = 0
         self.updates = 0
 
-    def _tensors(self, obs: dict):
-        return (torch.as_tensor(obs["tiles"], device=self.device),
-                torch.as_tensor(obs["extras"], device=self.device))
+    def tensors(self, obs: dict) -> dict:
+        return {k: torch.as_tensor(v, device=self.device) for k, v in obs.items()}
 
     @torch.no_grad()
     def act(self, obs: dict, greedy: bool = False, generator: torch.Generator | None = None):
-        logits, value = self.net(*self._tensors(obs))
+        logits, value = self.net(self.tensors(obs))
         if greedy:
             action = logits.argmax(dim=1)
         else:
@@ -86,20 +102,28 @@ class PPOAgent:
         return action.cpu().numpy(), logp.cpu().numpy(), value.cpu().numpy()
 
     @torch.no_grad()
+    def probs(self, obs: dict):
+        """(action probabilities, value) for a single unbatched observation, used by demo/diagnostics."""
+        logits, value = self.net(self.tensors({k: v[None] for k, v in obs.items()}))
+        return torch.softmax(logits, 1)[0], float(value[0])
+
+    @torch.no_grad()
     def value(self, obs: dict) -> np.ndarray:
-        return self.net(*self._tensors(obs))[1].cpu().numpy()
+        return self.net(self.tensors(obs))[1].cpu().numpy()
 
     def update(self, batch: dict) -> dict:
+        """batch: {"obs": {key: array[n, ...]}, "actions", "logp", "values", "advantages", "returns"}."""
         c = self.cfg
         n = len(batch["actions"])
-        t = {k: torch.as_tensor(v, device=self.device) for k, v in batch.items()}
+        obs = self.tensors(batch["obs"])
+        t = {k: torch.as_tensor(v, device=self.device) for k, v in batch.items() if k != "obs"}
         stats = {"policy_loss": [], "value_loss": [], "entropy": [], "approx_kl": [], "clipfrac": []}
         mb_size = n // c.minibatches
         for _ in range(c.epochs):
             perm = torch.randperm(n, device=self.device)
             for start in range(0, mb_size * c.minibatches, mb_size):
                 idx = perm[start:start + mb_size]
-                logits, values = self.net(t["tiles"][idx], t["extras"][idx])
+                logits, values = self.net({k: v[idx] for k, v in obs.items()})
                 logp_all = torch.log_softmax(logits, dim=1)
                 logp = logp_all.gather(1, t["actions"][idx].long().unsqueeze(1)).squeeze(1)
                 entropy = -(logp_all.exp() * logp_all).sum(1).mean()

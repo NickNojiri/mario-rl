@@ -98,6 +98,13 @@ class PPOConfig:
     noop_max: int = 8
     coin_reward: float = 15.0  # raw game units; ~1 agent step of full-speed running
     flag_reward: float = 150.0
+    # v3 (see env/tiles.py). Defaults reproduce v2 so old checkpoints/configs load and hash unchanged.
+    obs_version: int = 2
+    reward_version: int = 2
+    death_reward: float = -150.0
+    hurt_reward: float = -50.0
+    points_per_100: float = 5.0
+    points_cap: float = 150.0
 
     # --- learning ---
     n_envs: int = 12
@@ -125,14 +132,20 @@ class PPOConfig:
     def env_kwargs(self, stages) -> dict:
         return dict(stages=list(stages), actions=self.actions, skip=self.skip, stack=self.stack,
                     no_progress_steps=self.no_progress_steps, noop_max=self.noop_max,
-                    coin_reward=self.coin_reward, flag_reward=self.flag_reward)
+                    coin_reward=self.coin_reward, flag_reward=self.flag_reward,
+                    obs_version=self.obs_version, reward_version=self.reward_version,
+                    death_reward=self.death_reward, hurt_reward=self.hurt_reward,
+                    points_per_100=self.points_per_100, points_cap=self.points_cap)
 
     def resolved_stages(self) -> tuple[list, list]:
         from env.tiles import TEST_STAGES, TRAIN_STAGES
         return list(self.train_stages or TRAIN_STAGES), list(self.test_stages or TEST_STAGES)
 
     def learning_hash(self) -> str:
-        d = {k: v for k, v in asdict(self).items() if k not in PPO_BOOKKEEPING_FIELDS}
+        # Fields added after v2 are left out while at their v2-compatible defaults, so v2 checkpoints keep
+        # their original hash and still resume.
+        d = {k: v for k, v in asdict(self).items()
+             if k not in PPO_BOOKKEEPING_FIELDS and not (k in V3_FIELD_DEFAULTS and v == V3_FIELD_DEFAULTS[k])}
         return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:12]
 
     def to_dict(self) -> dict:
@@ -146,6 +159,8 @@ class PPOConfig:
 
 PPO_BOOKKEEPING_FIELDS = frozenset(
     {"total_steps", "save_every", "snapshot_every", "device", "torch_threads", "rollout_threads"})
+V3_FIELD_DEFAULTS = {"obs_version": 2, "reward_version": 2, "death_reward": -150.0, "hurt_reward": -50.0,
+                     "points_per_100": 5.0, "points_cap": 150.0}
 
 PPO_PRESETS = {
     # Every code path in about a minute: vec env, truncation bootstrap, updates, checkpoint, snapshot.
@@ -156,6 +171,17 @@ PPO_PRESETS = {
     # One-hour run for fast iteration: measured 520 steps/s (12 envs, after speed fixes) x 3300 s; snapshots
     # every ~15 min (520 x 900). Evals running alongside will stretch the wall-clock time somewhat.
     "ppo_1h": PPOConfig(total_steps=1_716_000, snapshot_every=468_000, save_every=100_000),
+    # v3 experiments, same length as ppo_1h so they compare directly against ppo_1h_a:
+    #   b = new reward only, c = new reward + enemy motion/position observation, d = c + full 12-button set
+    "ppo_1h_v3b": PPOConfig(total_steps=1_716_000, snapshot_every=468_000, save_every=100_000, reward_version=3),
+    "ppo_1h_v3c": PPOConfig(total_steps=1_716_000, snapshot_every=468_000, save_every=100_000, reward_version=3,
+                            obs_version=3),
+    "ppo_1h_v3d": PPOConfig(total_steps=1_716_000, snapshot_every=468_000, save_every=100_000, reward_version=3,
+                            obs_version=3, actions="complex"),
+    "ppo_smoke_v3": PPOConfig(train_stages=("1-1", "1-2"), test_stages=("1-3",), n_envs=4, rollout_len=64,
+                              minibatches=4, total_steps=2_048, save_every=512, snapshot_every=1_024,
+                              no_progress_steps=40, torch_threads=2, rollout_threads=1, reward_version=3,
+                              obs_version=3, actions="complex"),
 }
 
 

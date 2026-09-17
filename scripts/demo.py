@@ -19,7 +19,7 @@ import torch
 
 from agent.ppo import PPOAgent
 from config import PPOConfig
-from env.tiles import COLS, ENEMY_BASE, MARIO_ID, ROWS, TileMarioEnv, n_extras
+from env.tiles import COLS, ENEMY_BASE, MARIO_ID, ROWS, TileMarioEnv
 
 SCALE = 3
 GAME_W, GAME_H = 256 * SCALE, 240 * SCALE
@@ -37,7 +37,7 @@ main{height:100%;display:flex;flex-direction:column;align-items:center;justify-c
 img{max-width:98vw;max-height:88vh;image-rendering:pixelated;border-radius:6px}
 p{margin:0;color:#a1a1aa;font-size:14px}</style></head><body><main>
 <img src="/stream" alt="live agent stream">
-<p>PPO agent (1-hour run) &middot; tile-grid observation &middot; github.com/NickNojiri/mario-rl</p>
+<p>PPO agent &middot; tile-grid observation &middot; run and training step shown in the panel &middot; github.com/NickNojiri/mario-rl</p>
 </main></body></html>"""
 
 p = argparse.ArgumentParser()
@@ -49,18 +49,57 @@ p.add_argument("--fps", type=int, default=30, help="stream frame rate")
 p.add_argument("--port", type=int, default=8765)
 p.add_argument("--greedy", action="store_true")
 p.add_argument("--once", action="store_true", help="play the stage list once instead of looping")
+p.add_argument("--follow", action="store_true",
+               help="watch a run while it trains: reload the checkpoint whenever it changes (between episodes)")
+p.add_argument("--follow-glob", default=None,
+               help="watch a queue of runs, e.g. 'runs/v3*/latest.pt': always play the most recently saved one, "
+                    "rebuilding the env/network when a run with a different observation or button set starts")
 args = p.parse_args()
-
 torch.set_num_threads(2)
-ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-cfg = PPOConfig.from_dict({**ckpt["config"], "noop_max": 30})
-train_stages, test_stages = cfg.resolved_stages()
-stages = {"test": test_stages, "train": train_stages}.get(args.stages) or args.stages.split(",")
-env = TileMarioEnv(**cfg.env_kwargs(stages))
-agent = PPOAgent(cfg, env.n_actions, n_extras(env.n_actions))
-agent.net.load_state_dict(ckpt["model"])
-agent.net.eval()
-names = BUTTONS if env.n_actions == len(BUTTONS) else [" ".join(b).upper() for b in env.action_set]
+
+env = agent = cfg = None
+names, stages, train_stages, test_stages = [], [], [], []
+loaded = {"path": None, "mtime": 0.0, "step": 0, "run": ""}
+
+
+def load_checkpoint(path: Path):
+    """(Re)load a checkpoint; rebuild env and network only when their shape-defining settings change."""
+    global env, agent, cfg, names, stages, train_stages, test_stages
+    ckpt = torch.load(path, map_location="cpu", weights_only=False)
+    new_cfg = PPOConfig.from_dict({**ckpt["config"], "noop_max": 30})
+    shape_key = lambda c: (c.obs_version, c.actions, c.stack) if c else None
+    if env is None or shape_key(new_cfg) != shape_key(cfg) or new_cfg.reward_version != cfg.reward_version:
+        if env is not None:
+            env.close()
+        train_stages, test_stages = new_cfg.resolved_stages()
+        stages = {"test": test_stages, "train": train_stages}.get(args.stages) or args.stages.split(",")
+        env = TileMarioEnv(**new_cfg.env_kwargs(stages))
+        env.frame_callback = on_frame
+        agent = PPOAgent(new_cfg, env.n_actions, env.n_extras)
+        names = BUTTONS if env.n_actions == len(BUTTONS) else [" ".join(b).upper() for b in env.action_set]
+    cfg = new_cfg
+    agent.net.load_state_dict(ckpt["model"])
+    agent.net.eval()
+    loaded.update(path=path, mtime=path.stat().st_mtime, step=ckpt.get("global_step", 0), run=path.parent.name)
+    print(f"playing {path} (training step {loaded['step']})", flush=True)
+
+
+def maybe_reload():
+    try:
+        if args.follow_glob:
+            candidates = sorted(Path(".").glob(args.follow_glob), key=lambda q: q.stat().st_mtime)
+            if not candidates:
+                return
+            path = candidates[-1]
+        elif args.follow:
+            path = args.checkpoint
+        else:
+            return
+        if path == loaded["path"] and path.stat().st_mtime == loaded["mtime"]:
+            return
+        load_checkpoint(path)
+    except Exception as exc:  # partial file mid-save; try again next episode
+        print(f"reload skipped: {exc}", flush=True)
 
 # ------------------------------------------------------------------ stream server
 latest = {"jpeg": None, "id": 0}
@@ -138,18 +177,34 @@ def draw_panel() -> np.ndarray:
         cv2.rectangle(panel, (lx, ly - 12), (lx + 14, ly + 2), col, -1)
         text(panel, lab, (lx + 20, ly), MUTED, 0.46)
 
+    # v3 checkpoints also see enemy motion: draw each enemy's velocity as an arrow on the grid
+    enemies = state.get("enemies")
+    mario = np.argwhere(grid == MARIO_ID)
+    if enemies is not None and len(mario):
+        mr, mc = mario[0]
+        for f in enemies:
+            if f[0] == 0:
+                continue
+            ex = int(ox + (mc + 0.5) * CELL + f[1] * 256 / 16 * CELL)
+            ey = int(oy + (mr + 0.5) * CELL + f[2] * 240 / 16 * CELL)
+            if ox <= ex < ox + COLS * CELL and oy <= ey < oy + ROWS * CELL:
+                tip = (int(ex + f[3] * 16 * 2.5), int(ey + f[4] * 8 * 2.5))
+                cv2.arrowedLine(panel, (ex, ey), tip, (255, 255, 255), 2, tipLength=0.4)
+
     by = ly + 32
+    row_h = min(21, (GAME_H - by - 70) // max(1, len(names)))
     text(panel, "Button probabilities (the policy's choice is highlighted)", (20, by), MUTED, 0.5)
     for i, name in enumerate(names):
-        y = by + 12 + i * 21
+        y = by + 8 + i * row_h
         pr = float(state["probs"][i])
         chosen = i == state["action"]
-        text(panel, name, (20, y + 14), INK if chosen else MUTED, 0.46, 2 if chosen else 1)
-        cv2.rectangle(panel, (135, y + 3), (135 + int(300 * pr), y + 17), C_MARIO if chosen else (100, 90, 90), -1)
-        text(panel, f"{pr:4.0%}", (445, y + 15), INK if chosen else MUTED, 0.46)
+        text(panel, name, (20, y + row_h - 5), INK if chosen else MUTED, 0.42, 2 if chosen else 1)
+        cv2.rectangle(panel, (135, y + 3), (135 + int(300 * pr), y + row_h - 3), C_MARIO if chosen else (100, 90, 90), -1)
+        text(panel, f"{pr:4.0%}", (445, y + row_h - 5), INK if chosen else MUTED, 0.42)
 
-    sy = by + 12 + len(names) * 21 + 24
-    text(panel, f"x_pos {state['x']:5d}    value estimate {state['value']:6.2f}", (20, sy), INK, 0.52)
+    sy = by + 8 + len(names) * row_h + 22
+    step_note = f"   {loaded['run']} @ {loaded['step'] / 1e6:.2f}M steps" if loaded["step"] else ""
+    text(panel, f"x_pos {state['x']:5d}   value {state['value']:6.2f}{step_note}", (20, sy), INK, 0.5)
     res = state["results"]
     if res:
         text(panel, f"this session: {len(res)} episodes, mean x_pos {np.mean([r[1] for r in res]):.0f}, "
@@ -183,32 +238,37 @@ def on_frame():
             cond.notify_all()
 
 
-env.frame_callback = on_frame
+if args.follow_glob:
+    while loaded["path"] is None:  # wait for the first run in the queue to save a checkpoint
+        maybe_reload()
+        if loaded["path"] is None:
+            time.sleep(10)
+else:
+    load_checkpoint(args.checkpoint)
 episode = 0
 try:
     while True:
-        for stage in stages:
+        for stage in list(stages):
             seed = args.seed + episode
             episode += 1
+            maybe_reload()
             gen = torch.Generator().manual_seed(seed)
             obs, _ = env.reset(seed=seed, stage=stage)
-            state.update(x=0, banner=None, grid=obs["tiles"][-1])
+            state.update(x=0, banner=None, grid=obs["tiles"][-1], enemies=obs.get("enemies"))
             while True:
-                with torch.no_grad():
-                    t = {k: torch.as_tensor(v[None]) for k, v in obs.items()}
-                    logits, value = agent.net(t["tiles"], t["extras"])
-                    probs = torch.softmax(logits, 1)[0]
+                probs, value = agent.probs(obs)
                 a = int(probs.argmax()) if args.greedy else int(torch.multinomial(probs, 1, generator=gen))
-                state.update(probs=probs.numpy(), action=a, value=float(value))
+                state.update(probs=probs.numpy(), action=a, value=value)
                 obs, _, terminated, truncated, info = env.step(a)
-                state.update(x=int(info["x_pos"]), grid=obs["tiles"][-1])
+                state.update(x=int(info["x_pos"]), grid=obs["tiles"][-1], enemies=obs.get("enemies"))
                 if terminated or truncated:
                     break
             ep = info["episode"]
             state["results"].append((stage, ep["x_pos"], ep["flag_get"]))
+            cause = ep.get("death_cause", "")
             state["banner"] = (("LEVEL CLEAR!", C_GOOD) if ep["flag_get"] else
                                (f"stuck: cut off at x={ep['x_pos']}", C_BAD) if truncated else
-                               (f"died at x={ep['x_pos']}", C_BAD))
+                               (f"died ({cause.replace('enemy_', 'enemy ')}) at x={ep['x_pos']}", C_BAD))
             print(f"{stage}: x_pos={ep['x_pos']} flag={ep['flag_get']} coins={ep['coins']} steps={ep['length']}",
                   flush=True)
             for _ in range(int(90 * args.speed)):  # hold the banner ~1.5 s

@@ -15,7 +15,7 @@ from PIL import Image
 
 from agent.ppo import PPOAgent
 from config import PPOConfig
-from env.tiles import TileMarioEnv, n_extras
+from env.tiles import TileMarioEnv
 
 p = argparse.ArgumentParser()
 p.add_argument("checkpoint", type=Path)
@@ -31,7 +31,7 @@ torch.set_num_threads(1)
 ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
 cfg = PPOConfig.from_dict({**ckpt["config"], "noop_max": args.noop_max})
 env = TileMarioEnv(**cfg.env_kwargs([args.stage]))
-agent = PPOAgent(cfg, env.n_actions, n_extras(env.n_actions))
+agent = PPOAgent(cfg, env.n_actions, env.n_extras)
 agent.net.load_state_dict(ckpt["model"])
 agent.net.eval()
 

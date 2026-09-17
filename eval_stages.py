@@ -31,7 +31,7 @@ def _eval_stage(job: dict) -> dict:
     env = TileMarioEnv(**cfg.env_kwargs([job["stage"]]))
     agent = None
     if job["checkpoint"]:
-        agent = PPOAgent(cfg, env.n_actions, n_extras(env.n_actions))
+        agent = PPOAgent(cfg, env.n_actions, n_extras(env.n_actions, cfg.obs_version))
         agent.net.load_state_dict(torch.load(job["checkpoint"], map_location="cpu", weights_only=False)["model"])
         agent.net.eval()
 
@@ -57,6 +57,8 @@ def _eval_stage(job: dict) -> dict:
         ep["seed"] = seed
         eps.append(ep)
     env.close()
+    steps = sum(e["length"] for e in eps) or 1
+    causes = [e["death_cause"] for e in eps]
     return {
         "stage": job["stage"], "group": job["group"], "episodes": len(eps),
         "mean_x_pos": float(np.mean([e["x_pos"] for e in eps])),
@@ -66,18 +68,29 @@ def _eval_stage(job: dict) -> dict:
         "stall_rate": float(np.mean([e["truncated"] for e in eps])),
         "mean_game_reward": float(np.mean([e["game_reward"] for e in eps])),
         "unique_trajectories": len({e["trajectory"] for e in eps}),
+        "pit_death_rate": float(np.mean([c == "pit" for c in causes])),
+        "enemy_death_rate": float(np.mean([c.startswith("enemy") for c in causes])),
+        "left_share": sum(e["left_presses"] for e in eps) / steps,
+        "noop_share": sum(e["noop_presses"] for e in eps) / steps,
+        "points_per_episode": float(np.mean([e["points"] for e in eps])),
+        "hurts_per_episode": float(np.mean([e["hurts"] for e in eps])),
+        "death_causes": {c: causes.count(c) for c in sorted(set(causes))},
         # per-episode records, so any single episode can be replayed exactly (scripts/record_gif_ppo.py)
-        "episodes_detail": [{k: e[k] for k in ("seed", "x_pos", "flag_get", "coins", "length", "terminated",
-                                                "truncated", "game_reward")} for e in eps],
+        "episodes_detail": [{k: e[k] for k in ("seed", "x_pos", "max_x", "flag_get", "death_cause", "coins",
+                                                "points", "hurts", "jumps", "left_presses", "noop_presses",
+                                                "length", "terminated", "truncated", "game_reward")} for e in eps],
     }
+
+
+SUMMARY_KEYS = ("mean_x_pos", "flag_rate", "mean_coins", "stall_rate", "mean_game_reward", "pit_death_rate",
+                "enemy_death_rate", "left_share", "noop_share", "points_per_episode", "hurts_per_episode")
 
 
 def summarize(rows: list[dict], group: str) -> dict:
     g = [r for r in rows if r["group"] == group]
     if not g:
         return {}
-    return {k: float(np.mean([r[k] for r in g])) for k in
-            ("mean_x_pos", "flag_rate", "mean_coins", "stall_rate", "mean_game_reward")} | {"stages": len(g)}
+    return {k: float(np.mean([r[k] for r in g])) for k in SUMMARY_KEYS} | {"stages": len(g)}
 
 
 def main():

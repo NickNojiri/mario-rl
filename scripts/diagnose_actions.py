@@ -10,7 +10,7 @@ import torch
 
 from agent.ppo import PPOAgent
 from config import PPOConfig
-from env.tiles import TileMarioEnv, n_extras
+from env.tiles import TileMarioEnv
 
 p = argparse.ArgumentParser()
 p.add_argument("checkpoint")
@@ -26,7 +26,7 @@ train, test = cfg.resolved_stages()
 stages = train + test if args.stages == "all" else args.stages.split(",")
 env = TileMarioEnv(**cfg.env_kwargs(stages))
 env.prebuild()
-agent = PPOAgent(cfg, env.n_actions, n_extras(env.n_actions))
+agent = PPOAgent(cfg, env.n_actions, env.n_extras)
 agent.net.load_state_dict(ckpt["model"])
 agent.net.eval()
 names = [" ".join(b) for b in env.action_set]
@@ -45,9 +45,7 @@ for stage in stages:
         obs, _ = env.reset(seed=seed, stage=stage)
         probs_hist, used_left = [], False
         while True:
-            with torch.no_grad():
-                logits, _ = agent.net(*(torch.as_tensor(obs[k][None]) for k in ("tiles", "extras")))
-                probs = torch.softmax(logits, 1)[0]
+            probs, _ = agent.probs(obs)
             a = int(torch.multinomial(probs, 1, generator=gen))
             actions[names[a]] += 1
             used_left |= a == LEFT

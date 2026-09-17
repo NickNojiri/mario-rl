@@ -4,17 +4,35 @@ Why tiles instead of pixels: every real level (and any future procedural generat
 the same small grid of tile ids, so skill learned on one layout is expressed in the same vocabulary as every
 other layout. Pixels carry per-level colors and scenery the agent would otherwise have to learn to ignore.
 
-Observation (dict):
+Observation (dict), obs_version 2:
   tiles  int16 [stack, 13, 16]  screen-aligned grid. 0-255 = the game's metatile id, 256+t = enemy of type t,
                                 320 = Mario. Ids are embedded by the network, so no hand-made solidity table.
   extras float32 [n_extra]      previous action one-hot (makes "A is held" observable), Mario x/y speed,
                                 float state one-hot (ground/jump/fall/flagpole), powerup one-hot.
+obs_version 3 adds what version 2 cannot show (enemy direction is invisible after snapping to 16 px cells:
+a goomba moves 2 px per agent step, verified by scripts/probe_enemies.py):
+  enemy_ids    int16 [6]        enemy type per slot (64 = empty), slots sorted nearest-first
+  enemy_states int16 [6]        raw enemy state byte (walking, shell, stomped, ...)
+  enemies      float32 [6, 6]   active, dx/256, dy/240 relative to Mario in pixels, x speed/16, y speed/8,
+                                on-screen flag
+  extras gains Mario's sub-tile x, screen y and sub-tile y (exact position for jump timing).
 
-Only information a player can see or already knows (layout, enemies, own motion, own last button) is used.
+Only information a player can see or already knows (layout, enemies and their motion, own motion, own last
+button) is used.
+
+Reward, reward_version 2: game reward (x velocity + clock + clipped death -15) + coin and flag bonuses.
+reward_version 3 (every component logged per episode):
+  progress  new ground only: max(0, x - farthest x so far), so walking back costs only time
+  time      in-game clock ticks (<= 0)
+  death     death_reward (default -150) instead of the game's clipped -15
+  hurt      hurt_reward when the powerup level drops (big -> small)
+  points    score gained from stomps, blocks and items (coin points and end-of-level bonuses excluded),
+            points_per_100 per 100 points, capped per episode (stage 3-1 has an infinite koopa-shell farm)
+  coins, flag
 
 RAM addresses confirmed against gym_super_mario_bros/smb_env.py where it uses them (0x6D, 0x86, 0x71C,
-0xB5, 0x756, 0x1D, 0x16-0x1A); the others (0x500 metatile buffer, 0x71A, enemy position tables) are from
-the SMB disassembly and are verified visually by scripts/render_tiles.py.
+0xB5, 0x756, 0x1D, 0x16-0x1A); the metatile buffer and enemy tables follow the SMB disassembly's SprObject
+layout and are verified by scripts/render_tiles.py and scripts/probe_enemies.py.
 """
 from __future__ import annotations
 
@@ -32,6 +50,9 @@ ENEMY_BASE = 256
 N_ENEMY_TYPES = 64
 MARIO_ID = ENEMY_BASE + N_ENEMY_TYPES
 VOCAB = MARIO_ID + 1
+N_ENEMY_SLOTS = 6
+EMPTY_ENEMY_ID = N_ENEMY_TYPES  # embedding index for an empty slot
+N_ENEMY_FEATS = 6
 ACTION_SETS = {"right_only": RIGHT_ONLY, "simple": SIMPLE_MOVEMENT, "complex": COMPLEX_MOVEMENT}
 N_FLOAT_STATES, N_POWERUPS = 4, 3
 _NES_NOOP = 0
@@ -44,8 +65,8 @@ TEST_STAGES = ["2-1", "3-3", "4-2", "5-4", "7-1"]
 TRAIN_STAGES = [s for s in ALL_STAGES if s not in EXCLUDED_STAGES and s not in TEST_STAGES]
 
 
-def n_extras(n_actions: int) -> int:
-    return n_actions + 2 + N_FLOAT_STATES + N_POWERUPS
+def n_extras(n_actions: int, obs_version: int = 2) -> int:
+    return n_actions + 2 + N_FLOAT_STATES + N_POWERUPS + (3 if obs_version >= 3 else 0)
 
 
 def _s8(v) -> int:
@@ -55,6 +76,11 @@ def _s8(v) -> int:
 
 def screen_left_x(ram) -> int:
     return int(ram[0x071A]) * 256 + int(ram[0x071C])
+
+
+def mario_level_xy(ram) -> tuple[int, int]:
+    """Mario's level x and drawn-sprite y (RAM y + 16, see read_tile_grid)."""
+    return int(ram[0x6D]) * 256 + int(ram[0x86]), int(ram[0xCE]) + 16
 
 
 def read_tile_grid(ram) -> np.ndarray:
@@ -75,23 +101,51 @@ def read_tile_grid(ram) -> np.ndarray:
             grid[r, c] = ENEMY_BASE + min(int(ram[0x16 + i]), N_ENEMY_TYPES - 1)
 
     if ram[0xB5] == 1:
-        sx = int(ram[0x6D]) * 256 + int(ram[0x86]) - left
         # Player y in RAM sits 16px above the drawn sprite (checked against screenshots: standing Mario at
         # y=176 is drawn on row 10, directly above ground row 11).
+        sx = int(ram[0x6D]) * 256 + int(ram[0x86]) - left
         r, c = (int(ram[0xCE]) + 16 + 8 - 32) // 16, (sx + 8) // 16
         if 0 <= r < ROWS and 0 <= c < COLS:
             grid[r, c] = MARIO_ID
     return grid
 
 
-def read_extras(ram, prev_action: int, n_actions: int) -> np.ndarray:
-    out = np.zeros(n_extras(n_actions), dtype=np.float32)
+def read_enemies(ram) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per-slot enemy type, state and motion features relative to Mario, nearest first."""
+    mx, my = mario_level_xy(ram)
+    slots = []
+    for i in range(N_ENEMY_SLOTS):
+        if ram[0x0F + i] == 0:
+            continue
+        ex = int(ram[0x6E + i]) * 256 + int(ram[0x87 + i])
+        ey = int(ram[0xCF + i])
+        dx, dy = ex - mx, ey - my
+        slots.append((abs(dx) + abs(dy), min(int(ram[0x16 + i]), N_ENEMY_TYPES - 1), int(ram[0x1E + i]),
+                      [1.0, dx / 256.0, dy / 240.0, _s8(ram[0x58 + i]) / 16.0, _s8(ram[0xA0 + i]) / 8.0,
+                       float(ram[0xB6 + i] == 1)]))
+    slots.sort(key=lambda s: s[0])
+    ids = np.full(N_ENEMY_SLOTS, EMPTY_ENEMY_ID, np.int16)
+    states = np.zeros(N_ENEMY_SLOTS, np.int16)
+    feats = np.zeros((N_ENEMY_SLOTS, N_ENEMY_FEATS), np.float32)
+    for k, (_, eid, st, f) in enumerate(slots):
+        ids[k], states[k], feats[k] = eid, st, f
+    return ids, states, feats
+
+
+def read_extras(ram, prev_action: int, n_actions: int, obs_version: int = 2) -> np.ndarray:
+    out = np.zeros(n_extras(n_actions, obs_version), dtype=np.float32)
     if prev_action >= 0:
         out[prev_action] = 1.0
     out[n_actions] = _s8(ram[0x57]) / 40.0  # horizontal speed
     out[n_actions + 1] = _s8(ram[0x9F]) / 8.0  # vertical speed
     out[n_actions + 2 + min(int(ram[0x1D]), N_FLOAT_STATES - 1)] = 1.0
     out[n_actions + 2 + N_FLOAT_STATES + min(int(ram[0x756]), N_POWERUPS - 1)] = 1.0
+    if obs_version >= 3:
+        mx, my = mario_level_xy(ram)
+        base = n_actions + 2 + N_FLOAT_STATES + N_POWERUPS
+        out[base] = (mx % 16) / 16.0
+        out[base + 1] = min(my, 255) / 240.0 if ram[0xB5] == 1 else 1.0
+        out[base + 2] = (my % 16) / 16.0
     return out
 
 
@@ -102,11 +156,14 @@ def _find_smb(env):
     return env
 
 
+REWARD_COMPONENTS = ("progress", "time", "death", "hurt", "points", "coins", "flag")
+
+
 class TileMarioEnv:
     """Gymnasium-style env over a set of real SMB stages; a stage is sampled at every reset.
 
-    reward = game reward (progress - clock - death) + coin_reward * coins + flag_reward * reached_flag,
-    all in raw game units. info["game_reward"] keeps the unshaped part so eval can report it separately.
+    info["game_reward"] keeps the game's own unshaped reward so runs with different reward versions can be
+    compared. info["episode"] (on the final step) carries outcome, behaviour and reward-component statistics.
     """
 
     def __init__(
@@ -119,20 +176,32 @@ class TileMarioEnv:
         noop_max: int = 30,
         coin_reward: float = 15.0,
         flag_reward: float = 150.0,
+        obs_version: int = 2,
+        reward_version: int = 2,
+        death_reward: float = -150.0,
+        hurt_reward: float = -50.0,
+        points_per_100: float = 5.0,
+        points_cap: float = 150.0,
         render_mode: str | None = None,
     ):
         self.stages = list(stages)
         self.action_set = ACTION_SETS[actions]
         self.n_actions = len(self.action_set)
-        self.n_extras = n_extras(self.n_actions)
+        self.obs_version, self.reward_version = obs_version, reward_version
+        self.n_extras = n_extras(self.n_actions, obs_version)
         self._skip, self._stack = skip, stack
         self._no_progress_steps, self._noop_max = no_progress_steps, noop_max
         self._coin_reward, self._flag_reward = coin_reward, flag_reward
+        self._death_reward, self._hurt_reward = death_reward, hurt_reward
+        self._points_per_100, self._points_cap = points_per_100, points_cap
         self._render_mode = render_mode
         self.frame_callback = None  # optional fn() called after every emulator frame (live demo rendering)
         self._envs: dict[str, tuple] = {}
         self._rng = np.random.default_rng()
         self.stage = None
+        self._left = {i for i, b in enumerate(self.action_set) if "left" in b}
+        self._jump = {i for i, b in enumerate(self.action_set) if "A" in b}
+        self._noop = {i for i, b in enumerate(self.action_set) if b == ["NOOP"]}
 
     # --- env construction (lazy: one emulator per stage actually visited) ---
     def _get(self, stage: str):
@@ -171,24 +240,60 @@ class TileMarioEnv:
         grid = read_tile_grid(self.ram)
         self._grids = [grid] * self._stack
         self._prev_action = -1
-        self._coins = int(self._smb._coins)  # same source as info["coins"]
+        smb = self._smb
+        self._coins = int(smb._coins)  # same source as info["coins"]
+        self._score = int(smb._score)
+        self._time = int(smb._time)
+        self._status = int(self.ram[0x756])
+        self._far_x = mario_level_xy(self.ram)[0]
+        self._points_paid = 0.0
         self._best_x = None
         self._since_progress = 0
         self._ep = {"stage": self.stage, "reward": 0.0, "game_reward": 0.0, "length": 0, "coins": 0, "x_pos": 0,
-                    "flag_get": False}
+                    "max_x": 0, "flag_get": False, "left_presses": 0, "noop_presses": 0, "jumps": 0,
+                    "point_events": 0, "points": 0, "hurts": 0, "death_cause": "",
+                    **{f"r_{k}": 0.0 for k in REWARD_COMPONENTS}}
         return self._obs(), {"stage": self.stage}
 
     def step(self, action: int):
         action = int(action)
         game_reward, terminated, truncated, info = self._raw_skip(action, use_joypad=True)
+        ram = self.ram
+        flag = bool(info["flag_get"])
+        x = int(info["x_pos"])
 
         coins_now = int(info["coins"])
         coin_delta = (coins_now - self._coins) % 100  # counter wraps at 100 (1-up)
         self._coins = coins_now
-        flag = bool(info["flag_get"])
-        reward = game_reward + self._coin_reward * coin_delta + (self._flag_reward if flag else 0.0)
+        score_now = int(info["score"])
+        points = 0 if flag else max(0, score_now - self._score - 200 * coin_delta)  # coins score 200 each
+        self._score = score_now
+        time_now = int(info["time"])
+        time_delta = min(0, time_now - self._time)
+        self._time = time_now
+        status_now = int(ram[0x756])
+        hurt = status_now < self._status and not terminated
+        self._status = status_now
+        died = terminated and not flag
 
-        x = int(info["x_pos"])
+        comp = {
+            "progress": float(min(max(0, x - self._far_x), 40)),  # cap: area changes (pipes) jump x
+            "time": float(time_delta),
+            "death": self._death_reward if died else 0.0,
+            "hurt": self._hurt_reward if hurt else 0.0,
+            "points": 0.0,
+            "coins": self._coin_reward * coin_delta,
+            "flag": self._flag_reward if flag else 0.0,
+        }
+        self._far_x = max(self._far_x, x)
+        if points and self._points_paid < self._points_cap:
+            comp["points"] = min(self._points_per_100 * points / 100.0, self._points_cap - self._points_paid)
+            self._points_paid += comp["points"]
+        if self.reward_version >= 3:
+            reward = sum(comp.values())
+        else:
+            reward = game_reward + comp["coins"] + comp["flag"]
+
         if self._best_x is not None and x > self._best_x:
             self._since_progress = 0
         else:
@@ -198,19 +303,48 @@ class TileMarioEnv:
             truncated = True
             info["truncated_reason"] = "no_progress"
 
-        self._grids = self._grids[1:] + [read_tile_grid(self.ram)]
-        self._prev_action = action
         ep = self._ep
+        if died:
+            ep["death_cause"] = self._death_cause(info)
+        self._grids = self._grids[1:] + [read_tile_grid(ram)]
+        ep["jumps"] += int(action in self._jump and self._prev_action not in self._jump)
+        ep["left_presses"] += int(action in self._left)
+        ep["noop_presses"] += int(action in self._noop)
+        self._prev_action = action
         ep["reward"] += reward
         ep["game_reward"] += game_reward
         ep["length"] += 1
         ep["coins"] += coin_delta
+        ep["points"] += points
+        ep["point_events"] += int(points > 0)
+        ep["hurts"] += int(hurt)
         ep["x_pos"] = x
+        ep["max_x"] = self._best_x
         ep["flag_get"] = flag
-        info.update(stage=self.stage, game_reward=game_reward, coin_delta=coin_delta)
+        for k, v in comp.items():
+            ep[f"r_{k}"] += v
+        info.update(stage=self.stage, game_reward=game_reward, coin_delta=coin_delta, reward_components=comp)
         if terminated or truncated:
+            if not ep["death_cause"]:
+                ep["death_cause"] = "flag" if flag else ("stall" if truncated else "unknown")
             info["episode"] = dict(ep, terminated=terminated, truncated=truncated)
         return self._obs(), reward, terminated, truncated, info
+
+    def _death_cause(self, info) -> str:
+        ram = self.ram
+        if ram[0xB5] > 1:
+            return "pit"
+        if int(info["time"]) == 0:
+            return "timeout"
+        mx, my = mario_level_xy(ram)
+        best, best_d = None, 32  # an enemy within ~2 tiles of Mario
+        for i in range(N_ENEMY_SLOTS):
+            if ram[0x0F + i] == 0:
+                continue
+            d = abs(int(ram[0x6E + i]) * 256 + int(ram[0x87 + i]) - mx) + abs(int(ram[0xCF + i]) - my)
+            if d < best_d:
+                best, best_d = int(ram[0x16 + i]), d
+        return f"enemy_0x{best:02x}" if best is not None else "hazard"
 
     def close(self):
         for joypad, _, _ in self._envs.values():
@@ -230,7 +364,11 @@ class TileMarioEnv:
         return total, bool(terminated), bool(truncated), info
 
     def _obs(self) -> dict:
-        return {
+        ram = self.ram
+        obs = {
             "tiles": np.stack(self._grids),
-            "extras": read_extras(self.ram, self._prev_action, self.n_actions),
+            "extras": read_extras(ram, self._prev_action, self.n_actions, self.obs_version),
         }
+        if self.obs_version >= 3:
+            obs["enemy_ids"], obs["enemy_states"], obs["enemies"] = read_enemies(ram)
+        return obs
