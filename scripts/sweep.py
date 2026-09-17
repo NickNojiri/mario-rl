@@ -101,7 +101,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--stage", choices=list(STAGES))
     p.add_argument("--only", help="comma list of variant names within the stage")
-    p.add_argument("--episodes-test", type=int, default=6)
+    p.add_argument("--episodes-test", type=int, default=12)  # SE ~25 on held-out mean x_pos (6 gave ~36)
     p.add_argument("--episodes-train", type=int, default=3)
     p.add_argument("--show", action="store_true")
     args = p.parse_args()
