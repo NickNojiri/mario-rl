@@ -38,6 +38,7 @@ def parse_args():
     p.add_argument("--resume", type=Path)
     p.add_argument("--allow-config-change", action="store_true")
     p.add_argument("--total-steps", type=int)
+    p.add_argument("--snapshot-every", type=int)
     p.add_argument("--n-envs", type=int)
     p.add_argument("--coin-reward", type=float)
     p.add_argument("--flag-reward", type=float)
@@ -48,7 +49,8 @@ def parse_args():
 def main():
     args = parse_args()
     signal.signal(signal.SIGTERM, signal.default_int_handler)
-    overrides = {k: v for k, v in {"total_steps": args.total_steps, "n_envs": args.n_envs,
+    overrides = {k: v for k, v in {"total_steps": args.total_steps, "snapshot_every": args.snapshot_every,
+                                   "n_envs": args.n_envs,
                                    "coin_reward": args.coin_reward, "flag_reward": args.flag_reward,
                                    "seed": args.seed}.items() if v is not None}
     if args.resume:
