@@ -54,7 +54,10 @@ p.add_argument("--follow", action="store_true",
 p.add_argument("--follow-glob", default=None,
                help="watch a queue of runs, e.g. 'runs/v3*/latest.pt': always play the most recently saved one, "
                     "rebuilding the env/network when a run with a different observation or button set starts")
+p.add_argument("--follow-queue", action="store_true", help="shortcut for --follow-glob 'runs/v3*_1h/latest.pt'")
 args = p.parse_args()
+if args.follow_queue:
+    args.follow_glob = "runs/v3*_1h/latest.pt"
 torch.set_num_threads(2)
 
 env = agent = cfg = None
@@ -77,6 +80,7 @@ def load_checkpoint(path: Path):
         env.frame_callback = on_frame
         agent = PPOAgent(new_cfg, env.n_actions, env.n_extras)
         names = BUTTONS if env.n_actions == len(BUTTONS) else [" ".join(b).upper() for b in env.action_set]
+        state.update(probs=np.zeros(env.n_actions), action=0, enemies=None)
     cfg = new_cfg
     agent.net.load_state_dict(ckpt["model"])
     agent.net.eval()
@@ -143,7 +147,7 @@ threading.Thread(target=server.serve_forever, daemon=True).start()
 print(f"demo streaming at http://localhost:{args.port}", flush=True)
 
 # ------------------------------------------------------------------ drawing
-state = {"probs": np.zeros(env.n_actions), "action": 0, "value": 0.0, "reward": 0.0, "x": 0, "banner": None,
+state = {"probs": np.zeros(1), "action": 0, "value": 0.0, "reward": 0.0, "x": 0, "banner": None,
          "grid": np.zeros((ROWS, COLS), np.int16), "results": []}
 
 

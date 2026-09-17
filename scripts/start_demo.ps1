@@ -2,14 +2,17 @@
 # Usage: .\scripts\start_demo.ps1                 (held-out stages, looping)
 #        .\scripts\start_demo.ps1 -Stages 1-1,3-3
 # Stop:  .\scripts\stop_demo.ps1
+#        .\scripts\start_demo.ps1 -FollowQueue   (watch the v3 experiment queue while it trains)
 param(
     [string]$Stages = "test",
-    [string]$Checkpoint = "runs/ppo_1h_a/latest.pt",
-    [int]$Port = 8765
+    [string]$Checkpoint = "runs/ppo_1h_a/latest_1h_frozen.pt",
+    [int]$Port = 8765,
+    [switch]$FollowQueue
 )
+$source = if ($FollowQueue) { "--follow-queue" } else { "--checkpoint $Checkpoint" }
 Start-Process wsl.exe -WindowStyle Hidden -ArgumentList (
     "-d Ubuntu --cd /mnt/c/Users/17143/mario-rl -- bash scripts/wsl_run.sh python -u -W ignore -m scripts.demo " +
-    "--checkpoint $Checkpoint --stages $Stages --port $Port"
+    "$source --stages $Stages --port $Port"
 )
 Start-Sleep -Seconds 6
 Start-Process "http://localhost:$Port"
