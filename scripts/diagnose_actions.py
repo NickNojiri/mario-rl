@@ -8,6 +8,7 @@ from collections import Counter
 import numpy as np
 import torch
 
+from agent.macros import MacroStepper
 from agent.ppo import PPOAgent
 from config import PPOConfig
 from env.tiles import TileMarioEnv
@@ -17,6 +18,7 @@ p.add_argument("checkpoint")
 p.add_argument("--episodes", type=int, default=4, help="per stage")
 p.add_argument("--stages", default="all")
 p.add_argument("--seed", type=int, default=90_000)
+p.add_argument("--mode", choices=["safe", "insane"], default="safe")
 args = p.parse_args()
 
 torch.set_num_threads(4)
@@ -26,11 +28,12 @@ train, test = cfg.resolved_stages()
 stages = train + test if args.stages == "all" else args.stages.split(",")
 env = TileMarioEnv(**cfg.env_kwargs(stages))
 env.prebuild()
-agent = PPOAgent(cfg, env.n_actions, env.n_extras)
+stepper = MacroStepper(env, cfg.actions)
+agent = PPOAgent(cfg, env.n_policy_actions, env.n_extras)
 agent.net.load_state_dict(ckpt["model"])
 agent.net.eval()
-names = [" ".join(b) for b in env.action_set]
-LEFT = names.index("left")
+names = env.policy_action_names
+LEFT = names.index("LEFT")
 NOOP = names.index("NOOP")
 
 actions, pre_death_left, pre_death_noop, all_left, all_noop = Counter(), [], [], [], []
@@ -42,7 +45,7 @@ for stage in stages:
         seed = args.seed + n
         n += 1
         gen = torch.Generator().manual_seed(seed)
-        obs, _ = env.reset(seed=seed, stage=stage)
+        obs, _ = env.reset(seed=seed, stage=stage, mode=args.mode, practice=False)
         probs_hist, used_left = [], False
         while True:
             probs, _ = agent.probs(obs)
@@ -50,7 +53,7 @@ for stage in stages:
             actions[names[a]] += 1
             used_left |= a == LEFT
             probs_hist.append(probs.numpy())
-            obs, _, terminated, truncated, info = env.step(a)
+            obs, _, terminated, truncated, info = stepper.step(a)
             if terminated or truncated:
                 break
         left_used_episodes += used_left

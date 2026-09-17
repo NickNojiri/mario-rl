@@ -77,6 +77,36 @@ def compute_gae(rewards, values, last_values, terminated, truncated, trunc_value
     return adv, adv + values
 
 
+def compute_gae_options(rewards, values, last_values, terminated, truncated, trunc_values, decision, gamma, lam):
+    """GAE when some steps are forced continuations of a macro chosen earlier (semi-MDP / options).
+
+    A decision at step t whose macro covers steps t..t+d-1 gets
+        R = sum_i gamma^i r_{t+i},  delta = R + gamma^d V(next) - V(s_t),  A = delta + (gamma*lam)^d A_next
+    where "next" is the next decision, the real final observation (truncated), 0 (terminated), or the value of
+    the observation after the rollout (bootstrap). With every step a decision this equals compute_gae.
+    Only entries where decision is True are meaningful.
+    """
+    T, N = rewards.shape
+    adv = np.zeros((T, N), dtype=np.float32)
+    ret = np.zeros((T, N), dtype=np.float32)
+    for i in range(N):
+        seg_r, seg_len = 0.0, 0
+        end_value, next_adv, chained = float(last_values[i]), 0.0, False
+        for t in reversed(range(T)):
+            if terminated[t, i] or truncated[t, i]:
+                seg_r, seg_len, next_adv, chained = 0.0, 0, 0.0, False
+                end_value = 0.0 if terminated[t, i] else float(trunc_values[t, i])
+            seg_r = float(rewards[t, i]) + gamma * seg_r
+            seg_len += 1
+            if decision[t, i]:
+                delta = seg_r + gamma ** seg_len * end_value - float(values[t, i])
+                a = delta + (gamma * lam) ** seg_len * next_adv if chained else delta
+                adv[t, i], ret[t, i] = a, a + float(values[t, i])
+                seg_r, seg_len = 0.0, 0
+                end_value, next_adv, chained = float(values[t, i]), a, True
+    return adv, ret
+
+
 class PPOAgent:
     def __init__(self, cfg, n_actions: int, n_extras: int):
         self.cfg = cfg

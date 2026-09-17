@@ -24,6 +24,9 @@ def _worker(conn, env_kwargs: dict):
                     info["final_obs"] = obs
                     obs, _ = env.reset()
                 conn.send((obs, reward, terminated, truncated, info))
+            elif cmd == "set_weights":
+                env.set_stage_weights(data)
+                conn.send(None)
             elif cmd == "close":
                 break
     finally:
@@ -60,6 +63,12 @@ class SubprocVecEnv:
         obs, rewards, terminated, truncated, infos = zip(*results)
         return (stack_obs(list(obs)), np.asarray(rewards, dtype=np.float32), np.asarray(terminated),
                 np.asarray(truncated), list(infos))
+
+    def set_stage_weights(self, weights: dict | None):
+        for c in self._conns:
+            c.send(("set_weights", weights))
+        for c in self._conns:
+            c.recv()
 
     def close(self):
         for c in self._conns:

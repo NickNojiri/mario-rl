@@ -17,6 +17,7 @@ import cv2
 import numpy as np
 import torch
 
+from agent.macros import MacroStepper
 from agent.ppo import PPOAgent
 from config import PPOConfig
 from env.tiles import COLS, ENEMY_BASE, MARIO_ID, ROWS, TileMarioEnv
@@ -54,10 +55,12 @@ p.add_argument("--follow", action="store_true",
 p.add_argument("--follow-glob", default=None,
                help="watch a queue of runs, e.g. 'runs/v3*/latest.pt': always play the most recently saved one, "
                     "rebuilding the env/network when a run with a different observation or button set starts")
-p.add_argument("--follow-queue", action="store_true", help="shortcut for --follow-glob 'runs/v3*_1h/latest.pt'")
+p.add_argument("--follow-queue", action="store_true", help="shortcut for --follow-glob 'runs/v[34]*_1h/latest.pt'")
+p.add_argument("--mode", choices=["safe", "insane", "alternate"], default="alternate",
+               help="play style for mode-conditioned (v4) checkpoints")
 args = p.parse_args()
 if args.follow_queue:
-    args.follow_glob = "runs/v3*_1h/latest.pt"
+    args.follow_glob = "runs/v[34]*_1h/latest.pt"
 torch.set_num_threads(2)
 
 env = agent = cfg = None
@@ -69,7 +72,7 @@ def load_checkpoint(path: Path):
     """(Re)load a checkpoint; rebuild env and network only when their shape-defining settings change."""
     global env, agent, cfg, names, stages, train_stages, test_stages
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
-    new_cfg = PPOConfig.from_dict({**ckpt["config"], "noop_max": 30})
+    new_cfg = PPOConfig.from_dict({**ckpt["config"], "noop_max": 30, "practice_prob": 0.0})
     shape_key = lambda c: (c.obs_version, c.actions, c.stack) if c else None
     if env is None or shape_key(new_cfg) != shape_key(cfg) or new_cfg.reward_version != cfg.reward_version:
         if env is not None:
@@ -78,8 +81,8 @@ def load_checkpoint(path: Path):
         stages = {"test": test_stages, "train": train_stages}.get(args.stages) or args.stages.split(",")
         env = TileMarioEnv(**new_cfg.env_kwargs(stages))
         env.frame_callback = on_frame
-        agent = PPOAgent(new_cfg, env.n_actions, env.n_extras)
-        names = BUTTONS if env.n_actions == len(BUTTONS) else [" ".join(b).upper() for b in env.action_set]
+        agent = PPOAgent(new_cfg, env.n_policy_actions, env.n_extras)
+        names = BUTTONS if env.n_policy_actions == len(BUTTONS) else env.policy_action_names
         state.update(probs=np.zeros(env.n_actions), action=0, enemies=None)
     cfg = new_cfg
     agent.net.load_state_dict(ckpt["model"])
@@ -160,7 +163,10 @@ def draw_panel() -> np.ndarray:
     held_out = env.stage in test_stages
     text(panel, f"WORLD {env.stage}", (20, 40), INK, 0.95, 2)
     tag, tag_col = ("HELD-OUT: never trained on", C_GOOD) if held_out else ("training stage", MUTED)
-    text(panel, tag, (200, 40), tag_col, 0.55, 1)
+    text(panel, tag, (200, 32), tag_col, 0.55, 1)
+    if state.get("mode"):
+        text(panel, f"mode: {state['mode'].upper()}", (200, 54), C_BAD if state["mode"] == "insane" else C_GOOD,
+             0.55, 2)
 
     text(panel, "What the agent sees: 13x16 tile grid from RAM", (20, 74), MUTED, 0.5)
     ox, oy = 20, 86
@@ -257,13 +263,20 @@ try:
             episode += 1
             maybe_reload()
             gen = torch.Generator().manual_seed(seed)
-            obs, _ = env.reset(seed=seed, stage=stage)
-            state.update(x=0, banner=None, grid=obs["tiles"][-1], enemies=obs.get("enemies"))
+            mode = (("safe", "insane")[episode % 2] if args.mode == "alternate" else args.mode)
+            obs, _ = env.reset(seed=seed, stage=stage, mode=mode, practice=False)
+            state.update(x=0, banner=None, grid=obs["tiles"][-1], enemies=obs.get("enemies"),
+                         mode=mode if cfg.reward_version >= 4 else None)
+            stepper = MacroStepper(env, cfg.actions)
+            queue = []
             while True:
-                probs, value = agent.probs(obs)
-                a = int(probs.argmax()) if args.greedy else int(torch.multinomial(probs, 1, generator=gen))
-                state.update(probs=probs.numpy(), action=a, value=value)
-                obs, _, terminated, truncated, info = env.step(a)
+                if not queue:
+                    probs, value = agent.probs(obs)
+                    a = int(probs.argmax()) if args.greedy else int(torch.multinomial(probs, 1, generator=gen))
+                    state.update(probs=probs.numpy(), action=a, value=value)
+                    joy, length = stepper.expand(a)
+                    queue = [joy] * length
+                obs, _, terminated, truncated, info = env.step(queue.pop(0))
                 state.update(x=int(info["x_pos"]), grid=obs["tiles"][-1], enemies=obs.get("enemies"))
                 if terminated or truncated:
                     break

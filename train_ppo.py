@@ -19,19 +19,22 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from agent.ppo import PPOAgent, compute_gae
+from agent.ppo import PPOAgent, compute_gae, compute_gae_options
 from agent.vec_env import SubprocVecEnv, stack_obs
 from config import PPO_BOOKKEEPING_FIELDS, PPOConfig, get_ppo_preset
-from env.tiles import ACTION_SETS, n_extras
+from env.tiles import ACTION_SETS, MACRO_SETS, n_extras, n_policy_actions
 
 UPDATE_FIELDS = ["update", "step", "steps_per_sec", "rollout_sec", "learn_sec", "episodes", "mean_x_pos", "flag_rate",
                  "mean_coins", "mean_game_reward", "stall_rate", "pit_death_rate", "enemy_death_rate", "left_share",
-                 "noop_share", "points_per_episode", "hurts_per_episode", "policy_loss", "value_loss", "entropy",
-                 "approx_kl", "clipfrac", "explained_variance", "wall_time"]
-EPISODE_FIELDS = ["step", "stage", "x_pos", "max_x", "flag_get", "death_cause", "coins", "points", "point_events",
+                 "noop_share", "points_per_episode", "hurts_per_episode", "practice_episodes",
+                 "practice_pit_death_rate", "decision_share", "policy_loss", "value_loss", "entropy", "approx_kl",
+                 "clipfrac", "explained_variance", "wall_time"]
+EPISODE_FIELDS = ["step", "stage", "mode", "practice", "x_pos", "max_x", "flag_get", "death_cause", "coins", "points",
+                  "point_events",
                   "hurts", "jumps", "left_presses", "noop_presses", "game_reward", "reward", "length", "terminated",
                   "truncated", "r_progress", "r_time", "r_death", "r_hurt", "r_points", "r_coins", "r_flag"]
-PRESETS = ["ppo_smoke", "ppo_full", "ppo_1h", "ppo_1h_v3b", "ppo_1h_v3c", "ppo_1h_v3d", "ppo_smoke_v3"]
+PRESETS = ["ppo_smoke", "ppo_full", "ppo_1h", "ppo_1h_v3b", "ppo_1h_v3c", "ppo_1h_v3d", "ppo_smoke_v3",
+           "ppo_1h_v4", "ppo_smoke_v4"]
 
 
 def parse_args():
@@ -75,8 +78,9 @@ def main():
 
     train_stages, test_stages = cfg.resolved_stages()
     assert not set(train_stages) & set(test_stages), "held-out stages leaked into training"
-    n_actions = len(ACTION_SETS[cfg.actions])
-    agent = PPOAgent(cfg, n_actions, n_extras(n_actions, cfg.obs_version))
+    n_joy = len(ACTION_SETS[cfg.actions])
+    macros = MACRO_SETS.get(cfg.actions, [])
+    agent = PPOAgent(cfg, n_policy_actions(cfg.actions), n_extras(n_joy, cfg.obs_version))
     if args.resume:
         agent.load(args.resume, allow_config_change=args.allow_config_change)
         print(f"resumed step={agent.global_step} updates={agent.updates}")
@@ -105,8 +109,13 @@ def main():
         "actions": np.zeros((T, N), np.int64), "logp": np.zeros((T, N), np.float32),
         "values": np.zeros((T, N), np.float32), "rewards": np.zeros((T, N), np.float32),
         "terminated": np.zeros((T, N), bool), "truncated": np.zeros((T, N), bool),
-        "trunc_values": np.zeros((T, N), np.float32),
+        "trunc_values": np.zeros((T, N), np.float32), "decision": np.ones((T, N), bool),
     }
+    # Macro state per env: joypad action being held and forced steps remaining after the current one.
+    held_joy = np.zeros(N, np.int64)
+    remaining = np.zeros(N, np.int64)
+    stage_now = [None] * N
+    plr_score = {s: 1.0 for s in train_stages}  # EMA of mean positive advantage per stage (learning potential)
     t_start = time.monotonic()
     last_save = agent.global_step // cfg.save_every
     last_snap = agent.global_step // cfg.snapshot_every
@@ -116,20 +125,31 @@ def main():
             torch.set_num_threads(cfg.rollout_threads)
             episodes = []
             buf["trunc_values"][:] = 0.0
+            stage_of_step = np.empty((T, N), dtype=object)
             for t in range(T):
                 action, logp, value = agent.act(obs)
-                next_obs, reward, terminated, truncated, infos = envs.step(action)
+                decision = remaining == 0
+                joy = np.where(decision, action, held_joy)
+                for i in np.flatnonzero(decision):
+                    if action[i] >= n_joy:  # a macro: hold its buttons for its length
+                        _, held_joy[i], length = macros[action[i] - n_joy]
+                        joy[i], remaining[i] = held_joy[i], length - 1
+                remaining[~decision] -= 1
+                next_obs, reward, terminated, truncated, infos = envs.step(joy)
                 for k, v in obs.items():
                     obs_buf[k][t] = v
                 buf["actions"][t], buf["logp"][t], buf["values"][t] = action, logp, value
+                buf["decision"][t] = decision
                 buf["rewards"][t] = reward * cfg.reward_scale
                 buf["terminated"][t], buf["truncated"][t] = terminated, truncated
+                remaining[terminated | truncated] = 0  # a macro never carries into the next episode
 
                 cut = [i for i in range(N) if truncated[i] and not terminated[i]]
                 if cut:
                     final = stack_obs([infos[i]["final_obs"] for i in cut])
                     buf["trunc_values"][t, cut] = agent.value(final)
-                for info in infos:
+                for i, info in enumerate(infos):
+                    stage_of_step[t, i] = info["stage"]
                     if "episode" in info:
                         ep = info["episode"]
                         episodes.append(ep)
@@ -139,13 +159,33 @@ def main():
 
             t_learn = time.monotonic()
             torch.set_num_threads(cfg.torch_threads)
-            adv, returns = compute_gae(buf["rewards"], buf["values"], agent.value(obs), buf["terminated"],
-                                       buf["truncated"], buf["trunc_values"], cfg.gamma, cfg.gae_lambda)
-            flat = lambda a: a.reshape(T * N, *a.shape[2:])
+            if macros:
+                adv, returns = compute_gae_options(buf["rewards"], buf["values"], agent.value(obs), buf["terminated"],
+                                                   buf["truncated"], buf["trunc_values"], buf["decision"], cfg.gamma,
+                                                   cfg.gae_lambda)
+            else:
+                adv, returns = compute_gae(buf["rewards"], buf["values"], agent.value(obs), buf["terminated"],
+                                           buf["truncated"], buf["trunc_values"], cfg.gamma, cfg.gae_lambda)
+            keep = buf["decision"].reshape(-1)  # forced macro steps are not policy decisions
+            flat = lambda a: a.reshape(T * N, *a.shape[2:])[keep]
             stats = agent.update({"obs": {k: flat(v) for k, v in obs_buf.items()},
                                   "actions": flat(buf["actions"]), "logp": flat(buf["logp"]),
                                   "values": flat(buf["values"]), "advantages": flat(adv), "returns": flat(returns)})
 
+            if cfg.plr:  # rank-based prioritized level replay on mean positive advantage, mixed with uniform
+                for s in train_stages:
+                    m = buf["decision"] & (stage_of_step == s)
+                    if m.any():
+                        plr_score[s] = 0.7 * plr_score[s] + 0.3 * float(np.clip(adv[m], 0, None).mean())
+                order = sorted(train_stages, key=lambda s: -plr_score[s])
+                rank_w = {s: (1.0 / (r + 1)) ** (1.0 / cfg.plr_rank_beta) for r, s in enumerate(order)}
+                z = sum(rank_w.values())
+                weights = {s: cfg.plr_uniform_mix / len(train_stages) + (1 - cfg.plr_uniform_mix) * rank_w[s] / z
+                           for s in train_stages}
+                envs.set_stage_weights(weights)
+
+            practice_eps = [e for e in episodes if e.get("practice")]
+            episodes = [e for e in episodes if not e.get("practice")]  # progress stats from real starts only
             mean = lambda key: float(np.mean([e[key] for e in episodes])) if episodes else ""
             share = lambda pred: float(np.mean([pred(e) for e in episodes])) if episodes else ""
             steps_total = sum(e["length"] for e in episodes) or 1
@@ -161,6 +201,10 @@ def main():
                    "left_share": round(sum(e["left_presses"] for e in episodes) / steps_total, 4),
                    "noop_share": round(sum(e["noop_presses"] for e in episodes) / steps_total, 4),
                    "points_per_episode": mean("points"), "hurts_per_episode": mean("hurts"),
+                   "practice_episodes": len(practice_eps),
+                   "practice_pit_death_rate": (float(np.mean([e["death_cause"] == "pit" for e in practice_eps]))
+                                               if practice_eps else ""),
+                   "decision_share": round(float(keep.mean()), 3),
                    **{k: round(v, 5) for k, v in stats.items()},
                    "wall_time": round(time.monotonic() - t_start, 1)}
             upd_writer.writerow(row)

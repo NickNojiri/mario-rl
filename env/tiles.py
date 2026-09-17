@@ -53,9 +53,35 @@ VOCAB = MARIO_ID + 1
 N_ENEMY_SLOTS = 6
 EMPTY_ENEMY_ID = N_ENEMY_TYPES  # embedding index for an empty slot
 N_ENEMY_FEATS = 6
-ACTION_SETS = {"right_only": RIGHT_ONLY, "simple": SIMPLE_MOVEMENT, "complex": COMPLEX_MOVEMENT}
+ACTION_SETS = {"right_only": RIGHT_ONLY, "simple": SIMPLE_MOVEMENT, "complex": COMPLEX_MOVEMENT,
+               "simple_macro": SIMPLE_MOVEMENT + [["left", "A"], ["left", "B"]]}
+# Macro actions (options): (name, joypad action index, agent steps held). Expanded by the trainer / MacroStepper;
+# the env itself only ever sees joypad actions. Lengths come from scripts/jump_physics.py: a full-distance jump
+# needs A held 6-8 agent steps.
+MACRO_SETS = {"simple_macro": [("RUN JUMP S", 4, 2), ("RUN JUMP M", 4, 5), ("RUN JUMP L", 4, 8),
+                               ("WALK JUMP L", 2, 6), ("HOP BACK", 7, 4)]}
 N_FLOAT_STATES, N_POWERUPS = 4, 3
 _NES_NOOP = 0
+N_HINTS = 9
+MODES = ("safe", "insane")
+# Measured max horizontal jump distance in px (scripts/jump_physics.py, 8-1 and 3-2 agree).
+JUMP_PX = {"walk_tap": 42, "walk_max": 83, "run_tap": 70, "run_max": 156}
+# reward_version 4: per-mode weights. safe = survive and collect; insane = speedrun.
+MODE_WEIGHTS = {
+    "safe": dict(progress=1.0, time=0.5, death=-300.0, hurt=-100.0, points_per_100=10.0, points_cap=300.0,
+                 coin=15.0, flag=150.0),
+    "insane": dict(progress=1.5, time=3.0, death=-100.0, hurt=-25.0, points_per_100=0.0, points_cap=0.0,
+                   coin=0.0, flag=400.0),
+}
+
+
+def policy_action_names(actions: str) -> list[str]:
+    names = [" ".join(b).upper() for b in ACTION_SETS[actions]]
+    return names + [m[0] for m in MACRO_SETS.get(actions, [])]
+
+
+def n_policy_actions(actions: str) -> int:
+    return len(ACTION_SETS[actions]) + len(MACRO_SETS.get(actions, []))
 
 ALL_STAGES = [f"{w}-{s}" for w in range(1, 9) for s in range(1, 5)]
 # Water physics (2-2, 7-2) and maze castles that loop unless a hidden path is taken (4-4, 7-4, 8-4).
@@ -66,7 +92,8 @@ TRAIN_STAGES = [s for s in ALL_STAGES if s not in EXCLUDED_STAGES and s not in T
 
 
 def n_extras(n_actions: int, obs_version: int = 2) -> int:
-    return n_actions + 2 + N_FLOAT_STATES + N_POWERUPS + (3 if obs_version >= 3 else 0)
+    return (n_actions + 2 + N_FLOAT_STATES + N_POWERUPS + (3 if obs_version >= 3 else 0)
+            + (N_HINTS + len(MODES) if obs_version >= 4 else 0))
 
 
 def _s8(v) -> int:
@@ -133,7 +160,7 @@ def read_enemies(ram) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 def read_extras(ram, prev_action: int, n_actions: int, obs_version: int = 2) -> np.ndarray:
-    out = np.zeros(n_extras(n_actions, obs_version), dtype=np.float32)
+    out = np.zeros(n_extras(n_actions, min(obs_version, 3)), dtype=np.float32)  # v4 hints/mode appended in _obs
     if prev_action >= 0:
         out[prev_action] = 1.0
     out[n_actions] = _s8(ram[0x57]) / 40.0  # horizontal speed
@@ -146,6 +173,70 @@ def read_extras(ram, prev_action: int, n_actions: int, obs_version: int = 2) -> 
         out[base] = (mx % 16) / 16.0
         out[base + 1] = min(my, 255) / 240.0 if ram[0xB5] == 1 else 1.0
         out[base + 2] = (my % 16) / 16.0
+    return out
+
+
+def _column_solid_from(ram, level_x: int, from_row: int) -> int:
+    """First solid row at or below from_row in the column holding level_x (13 = none, i.e. a pit)."""
+    page, col = (level_x // 256) % 2, (level_x % 256) // 16
+    base = 0x500 + page * 208 + col
+    for r in range(max(from_row, 0), 13):
+        if ram[base + r * 16] != 0:
+            return r
+    return 13
+
+
+def read_hints(ram) -> np.ndarray:
+    """Physics hints a player reads at a glance (obs_version 4), all derived from what is on screen:
+      0 distance from Mario's front to the next pit (fraction of 10 tiles; 1 = none within 10 tiles)
+      1 that pit's width (fraction of 10 tiles)
+      2 ground step 2 tiles ahead (+ = wall/step up, - = step down), in units of 4 tiles
+      3-6 can the pit (edge distance + width) be cleared by a walking tap / walking full / running tap / running
+          full jump (measured distances in JUMP_PX); all 1 when there is no pit
+      7 closeness in time to the nearest enemy ahead at Mario's height: 1 / (1 + agent steps to contact)
+      8 stomp opportunity: Mario falling with an enemy just below
+    Mario's feet row uses the small-Mario offset; searches go downward, so a big Mario still finds the ground."""
+    out = np.zeros(N_HINTS, np.float32)
+    if ram[0xB5] != 1:
+        return out
+    mx, my = mario_level_xy(ram)
+    feet_row = int(ram[0xCE]) // 16
+    front = mx + 12
+    pit_start = pit_width = None
+    for k in range(0, 160, 8):
+        supported = _column_solid_from(ram, front + k, feet_row) < 13
+        if pit_start is None and not supported:
+            pit_start = k
+        elif pit_start is not None and supported:
+            pit_width = k - pit_start
+            break
+    if pit_start is not None:
+        pit_width = pit_width if pit_width is not None else 160 - pit_start
+        need = pit_start + pit_width + 8
+        out[0], out[1] = pit_start / 160.0, pit_width / 160.0
+        out[3:7] = [need <= JUMP_PX["walk_tap"], need <= JUMP_PX["walk_max"], need <= JUMP_PX["run_tap"],
+                    need <= JUMP_PX["run_max"]]
+    else:
+        out[0], out[3:7] = 1.0, 1.0
+    here = _column_solid_from(ram, mx + 8, feet_row)
+    ahead = _column_solid_from(ram, mx + 8 + 32, feet_row - 2)
+    if here < 13 and ahead < 13:
+        out[2] = np.clip((here - ahead) / 4.0, -1.0, 1.0)
+
+    mario_vx = _s8(ram[0x57]) / 16.0  # px per frame (~16 speed units per px/frame, checked against RAM motion)
+    falling = int(ram[0x1D]) in (1, 2) and _s8(ram[0x9F]) > 0
+    for i in range(N_ENEMY_SLOTS):
+        if ram[0x0F + i] == 0:
+            continue
+        dx = int(ram[0x6E + i]) * 256 + int(ram[0x87 + i]) - mx
+        dy = int(ram[0xCF + i]) - my
+        if dx > 0 and abs(dy) < 24:
+            closing = mario_vx - _s8(ram[0x58 + i]) / 16.0
+            if closing > 0.05:
+                steps = max(dx - 16, 0) / closing / 4.0
+                out[7] = max(out[7], 1.0 / (1.0 + steps))
+        if falling and abs(dx) < 16 and 0 < dy < 48:
+            out[8] = 1.0
     return out
 
 
@@ -182,11 +273,19 @@ class TileMarioEnv:
         hurt_reward: float = -50.0,
         points_per_100: float = 5.0,
         points_cap: float = 150.0,
+        mode_safe_prob: float = 0.5,
+        practice_prob: float = 0.0,
         render_mode: str | None = None,
     ):
         self.stages = list(stages)
         self.action_set = ACTION_SETS[actions]
-        self.n_actions = len(self.action_set)
+        self.n_actions = len(self.action_set)  # joypad actions (what the emulator receives)
+        self.n_policy_actions = n_policy_actions(actions)  # joypad actions + macros (what the policy chooses)
+        self.policy_action_names = policy_action_names(actions)
+        self._mode_safe_prob, self._practice_prob = mode_safe_prob, practice_prob
+        self._stage_weights = None
+        self._archive: dict[str, list] = {}  # stage -> [(noops, joypad action prefix)] just before recent deaths
+        self.mode = MODES[0]
         self.obs_version, self.reward_version = obs_version, reward_version
         self.n_extras = n_extras(self.n_actions, obs_version)
         self._skip, self._stack = skip, stack
@@ -226,20 +325,56 @@ class TileMarioEnv:
     def screen(self) -> np.ndarray:
         return self._smb.screen
 
-    def reset(self, seed: int | None = None, stage: str | None = None):
+    def set_stage_weights(self, weights: dict | None):
+        """Prioritized stage sampling (PLR); None = uniform."""
+        if weights is None:
+            self._stage_weights = None
+            return
+        w = np.array([max(float(weights.get(s, 0.0)), 0.0) for s in self.stages])
+        self._stage_weights = w / w.sum() if w.sum() > 0 else None
+
+    def reset(self, seed: int | None = None, stage: str | None = None, mode: str | None = None,
+              practice: bool | None = None):
         if seed is not None:
             self._rng = np.random.default_rng(seed)
-        self.stage = stage or self.stages[int(self._rng.integers(len(self.stages)))]
+        if stage is None:
+            idx = (self._rng.choice(len(self.stages), p=self._stage_weights) if self._stage_weights is not None
+                   else self._rng.integers(len(self.stages)))
+            stage = self.stages[int(idx)]
+        self.stage = stage
+        self.mode = mode or (MODES[0] if self._rng.random() < self._mode_safe_prob else MODES[1])
         self._joypad, self._base, self._smb = self._get(self.stage)
+
+        entries = self._archive.get(self.stage, [])
+        if practice is None:
+            practice = bool(entries) and self._rng.random() < self._practice_prob
+        practice = practice and bool(entries)
+        if practice:
+            noops, prefix = entries[int(self._rng.integers(len(entries)))]
+        else:
+            noops, prefix = int(self._rng.integers(0, self._noop_max + 1)), []
+
         _, info = self._joypad.reset()
-        for _ in range(int(self._rng.integers(0, self._noop_max + 1))):
+        for _ in range(noops):
             _, terminated, truncated, info = self._raw_skip(_NES_NOOP, use_joypad=False)
             if terminated or truncated:
                 _, info = self._joypad.reset()
+        # Go-Explore style return: the emulator is deterministic, so replaying the recorded prefix lands exactly
+        # where Mario was shortly before a past death. No reward or statistics are collected during the replay.
+        callback, self.frame_callback = self.frame_callback, None
+        for a in prefix:
+            _, terminated, truncated, _ = self._raw_skip(a, use_joypad=True)
+            if terminated or truncated:  # should not happen for a prefix of a recorded episode
+                _, _ = self._joypad.reset()
+                prefix, practice = [], False
+                break
+        self.frame_callback = callback
+        self._noops, self._actions = noops, list(prefix)
+        self.practice = practice
 
         grid = read_tile_grid(self.ram)
         self._grids = [grid] * self._stack
-        self._prev_action = -1
+        self._prev_action = prefix[-1] if prefix else -1
         smb = self._smb
         self._coins = int(smb._coins)  # same source as info["coins"]
         self._score = int(smb._score)
@@ -251,9 +386,9 @@ class TileMarioEnv:
         self._since_progress = 0
         self._ep = {"stage": self.stage, "reward": 0.0, "game_reward": 0.0, "length": 0, "coins": 0, "x_pos": 0,
                     "max_x": 0, "flag_get": False, "left_presses": 0, "noop_presses": 0, "jumps": 0,
-                    "point_events": 0, "points": 0, "hurts": 0, "death_cause": "",
-                    **{f"r_{k}": 0.0 for k in REWARD_COMPONENTS}}
-        return self._obs(), {"stage": self.stage}
+                    "point_events": 0, "points": 0, "hurts": 0, "death_cause": "", "mode": self.mode,
+                    "practice": practice, **{f"r_{k}": 0.0 for k in REWARD_COMPONENTS}}
+        return self._obs(), {"stage": self.stage, "mode": self.mode, "practice": practice}
 
     def step(self, action: int):
         action = int(action)
@@ -276,18 +411,24 @@ class TileMarioEnv:
         self._status = status_now
         died = terminated and not flag
 
+        if self.reward_version >= 4:
+            w = MODE_WEIGHTS[self.mode]
+        else:
+            w = dict(progress=1.0, time=1.0, death=self._death_reward, hurt=self._hurt_reward,
+                     points_per_100=self._points_per_100, points_cap=self._points_cap, coin=self._coin_reward,
+                     flag=self._flag_reward)
         comp = {
-            "progress": float(min(max(0, x - self._far_x), 40)),  # cap: area changes (pipes) jump x
-            "time": float(time_delta),
-            "death": self._death_reward if died else 0.0,
-            "hurt": self._hurt_reward if hurt else 0.0,
+            "progress": w["progress"] * float(min(max(0, x - self._far_x), 40)),  # cap: area changes jump x
+            "time": w["time"] * float(time_delta),
+            "death": w["death"] if died else 0.0,
+            "hurt": w["hurt"] if hurt else 0.0,
             "points": 0.0,
-            "coins": self._coin_reward * coin_delta,
-            "flag": self._flag_reward if flag else 0.0,
+            "coins": w["coin"] * coin_delta,
+            "flag": w["flag"] if flag else 0.0,
         }
         self._far_x = max(self._far_x, x)
-        if points and self._points_paid < self._points_cap:
-            comp["points"] = min(self._points_per_100 * points / 100.0, self._points_cap - self._points_paid)
+        if points and self._points_paid < w["points_cap"]:
+            comp["points"] = min(w["points_per_100"] * points / 100.0, w["points_cap"] - self._points_paid)
             self._points_paid += comp["points"]
         if self.reward_version >= 3:
             reward = sum(comp.values())
@@ -304,8 +445,11 @@ class TileMarioEnv:
             info["truncated_reason"] = "no_progress"
 
         ep = self._ep
+        self._actions.append(action)
         if died:
             ep["death_cause"] = self._death_cause(info)
+            if self._practice_prob > 0:
+                self._remember_before_death()
         self._grids = self._grids[1:] + [read_tile_grid(ram)]
         ep["jumps"] += int(action in self._jump and self._prev_action not in self._jump)
         ep["left_presses"] += int(action in self._left)
@@ -329,6 +473,17 @@ class TileMarioEnv:
                 ep["death_cause"] = "flag" if flag else ("stall" if truncated else "unknown")
             info["episode"] = dict(ep, terminated=terminated, truncated=truncated)
         return self._obs(), reward, terminated, truncated, info
+
+    def _remember_before_death(self, max_entries: int = 20):
+        """Archive a replayable prefix ending 6-20 agent steps before this death (Go-Explore 'remember')."""
+        back = int(self._rng.integers(6, 21))
+        cut = len(self._actions) - back
+        if cut <= 0:
+            return
+        entries = self._archive.setdefault(self.stage, [])
+        entries.append((self._noops, list(self._actions[:cut])))
+        if len(entries) > max_entries:
+            entries.pop(0)
 
     def _death_cause(self, info) -> str:
         ram = self.ram
@@ -371,4 +526,7 @@ class TileMarioEnv:
         }
         if self.obs_version >= 3:
             obs["enemy_ids"], obs["enemy_states"], obs["enemies"] = read_enemies(ram)
+        if self.obs_version >= 4:
+            mode = np.array([self.mode == m for m in MODES], np.float32)
+            obs["extras"] = np.concatenate([obs["extras"], read_hints(ram), mode])
         return obs

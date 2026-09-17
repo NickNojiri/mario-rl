@@ -22,16 +22,18 @@ import numpy as np
 def _eval_stage(job: dict) -> dict:
     import torch
 
+    from agent.macros import MacroStepper
     from agent.ppo import PPOAgent
     from config import PPOConfig
-    from env.tiles import TileMarioEnv, n_extras
+    from env.tiles import TileMarioEnv
 
     torch.set_num_threads(1)
     cfg = PPOConfig.from_dict(job["config"])
     env = TileMarioEnv(**cfg.env_kwargs([job["stage"]]))
+    stepper = MacroStepper(env, cfg.actions)
     agent = None
     if job["checkpoint"]:
-        agent = PPOAgent(cfg, env.n_actions, n_extras(env.n_actions, cfg.obs_version))
+        agent = PPOAgent(cfg, env.n_policy_actions, env.n_extras)
         agent.net.load_state_dict(torch.load(job["checkpoint"], map_location="cpu", weights_only=False)["model"])
         agent.net.eval()
 
@@ -40,16 +42,16 @@ def _eval_stage(job: dict) -> dict:
         seed = job["seed"] + i
         rng = np.random.default_rng(seed)
         gen = torch.Generator().manual_seed(seed)
-        obs, _ = env.reset(seed=seed, stage=job["stage"])
+        obs, _ = env.reset(seed=seed, stage=job["stage"], mode=job.get("mode"), practice=False)
         actions = []
         while True:
             if agent is None:
-                a = int(rng.integers(env.n_actions))
+                a = int(rng.integers(env.n_policy_actions))
             else:
                 batched = {k: v[None] for k, v in obs.items()}
                 a = int(agent.act(batched, greedy=job["greedy"], generator=gen)[0][0])
             actions.append(a)
-            obs, _, terminated, truncated, info = env.step(a)
+            obs, _, terminated, truncated, info = stepper.step(a)
             if terminated or truncated:
                 break
         ep = info["episode"]
@@ -104,6 +106,8 @@ def main():
     p.add_argument("--greedy", action="store_true")
     p.add_argument("--workers", type=int, default=12)
     p.add_argument("--noop-max", type=int, default=30, help="random start delay at eval (training uses less)")
+    p.add_argument("--mode", choices=["safe", "insane"], default="safe",
+                   help="play style for mode-conditioned (reward_version 4) checkpoints; ignored by older ones")
     p.add_argument("--out", type=Path)
     args = p.parse_args()
     if args.random == bool(args.checkpoint):
@@ -119,7 +123,8 @@ def main():
         cfg_dict = {k: v for k, v in json.loads(args.config.read_text()).items()}
     else:
         cfg_dict = get_ppo_preset("ppo_full").to_dict()
-    cfg = PPOConfig.from_dict({**cfg_dict, "noop_max": args.noop_max})
+    # Evaluation never uses training-only aids: no practice returns, uniform stages (each job fixes its stage).
+    cfg = PPOConfig.from_dict({**cfg_dict, "noop_max": args.noop_max, "practice_prob": 0.0})
     train, test = cfg.resolved_stages()
     if args.stages == "all":
         chosen = [(s, "train") for s in train] + [(s, "test") for s in test]
@@ -129,7 +134,8 @@ def main():
         chosen = [(s, "test" if s in test else "train" if s in train else "other") for s in args.stages.split(",")]
 
     jobs = [{"stage": s, "group": g, "config": cfg.to_dict(), "episodes": args.episodes, "seed": args.seed,
-             "greedy": args.greedy, "checkpoint": str(args.checkpoint) if args.checkpoint else None}
+             "greedy": args.greedy, "checkpoint": str(args.checkpoint) if args.checkpoint else None,
+             "mode": args.mode}
             for s, g in chosen]
     with mp.get_context("forkserver").Pool(min(args.workers, len(jobs))) as pool:
         rows = pool.map(_eval_stage, jobs)
@@ -137,7 +143,7 @@ def main():
     result = {
         "policy": "random" if args.random else str(args.checkpoint),
         "greedy": args.greedy, "episodes_per_stage": args.episodes, "base_seed": args.seed,
-        "noop_max": args.noop_max,
+        "noop_max": args.noop_max, "mode": args.mode if cfg.reward_version >= 4 else None,
         "train_summary": summarize(rows, "train"), "test_summary": summarize(rows, "test"),
         "stages": rows,
     }

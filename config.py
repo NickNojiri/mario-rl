@@ -105,6 +105,13 @@ class PPOConfig:
     hurt_reward: float = -50.0
     points_per_100: float = 5.0
     points_cap: float = 150.0
+    # v4: reward_version 4 uses per-mode weights (env.tiles.MODE_WEIGHTS); practice = Go-Explore style return to
+    # just before recent deaths; plr = prioritized stage sampling (Jiang et al. 2021).
+    mode_safe_prob: float = 0.5
+    practice_prob: float = 0.0
+    plr: bool = False
+    plr_uniform_mix: float = 0.5
+    plr_rank_beta: float = 0.3
 
     # --- learning ---
     n_envs: int = 12
@@ -135,7 +142,8 @@ class PPOConfig:
                     coin_reward=self.coin_reward, flag_reward=self.flag_reward,
                     obs_version=self.obs_version, reward_version=self.reward_version,
                     death_reward=self.death_reward, hurt_reward=self.hurt_reward,
-                    points_per_100=self.points_per_100, points_cap=self.points_cap)
+                    points_per_100=self.points_per_100, points_cap=self.points_cap,
+                    mode_safe_prob=self.mode_safe_prob, practice_prob=self.practice_prob)
 
     def resolved_stages(self) -> tuple[list, list]:
         from env.tiles import TEST_STAGES, TRAIN_STAGES
@@ -160,7 +168,8 @@ class PPOConfig:
 PPO_BOOKKEEPING_FIELDS = frozenset(
     {"total_steps", "save_every", "snapshot_every", "device", "torch_threads", "rollout_threads"})
 V3_FIELD_DEFAULTS = {"obs_version": 2, "reward_version": 2, "death_reward": -150.0, "hurt_reward": -50.0,
-                     "points_per_100": 5.0, "points_cap": 150.0}
+                     "points_per_100": 5.0, "points_cap": 150.0, "mode_safe_prob": 0.5, "practice_prob": 0.0,
+                     "plr": False, "plr_uniform_mix": 0.5, "plr_rank_beta": 0.3}
 
 PPO_PRESETS = {
     # Every code path in about a minute: vec env, truncation bootstrap, updates, checkpoint, snapshot.
@@ -178,6 +187,13 @@ PPO_PRESETS = {
                             obs_version=3),
     "ppo_1h_v3d": PPOConfig(total_steps=1_716_000, snapshot_every=468_000, save_every=100_000, reward_version=3,
                             obs_version=3, actions="complex"),
+    # v4: macros + physics hints + safe/insane modes + practice before deaths + prioritized stages
+    "ppo_1h_v4": PPOConfig(total_steps=1_716_000, snapshot_every=468_000, save_every=100_000, reward_version=4,
+                           obs_version=4, actions="simple_macro", practice_prob=0.25, plr=True),
+    "ppo_smoke_v4": PPOConfig(train_stages=("1-1", "4-2"), test_stages=("1-3",), n_envs=4, rollout_len=64,
+                              minibatches=4, total_steps=4_096, save_every=1_024, snapshot_every=2_048,
+                              no_progress_steps=40, torch_threads=2, rollout_threads=1, reward_version=4,
+                              obs_version=4, actions="simple_macro", practice_prob=0.5, plr=True),
     "ppo_smoke_v3": PPOConfig(train_stages=("1-1", "1-2"), test_stages=("1-3",), n_envs=4, rollout_len=64,
                               minibatches=4, total_steps=2_048, save_every=512, snapshot_every=1_024,
                               no_progress_steps=40, torch_threads=2, rollout_threads=1, reward_version=3,
