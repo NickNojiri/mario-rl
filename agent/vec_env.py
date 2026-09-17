@@ -11,6 +11,7 @@ def _worker(conn, env_kwargs: dict):
     from env.tiles import TileMarioEnv  # import inside the child process
 
     env = TileMarioEnv(**env_kwargs)
+    env.prebuild()
     try:
         while True:
             cmd, data = conn.recv()

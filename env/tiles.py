@@ -143,6 +143,11 @@ class TileMarioEnv:
             self._envs[stage] = (JoypadSpace(base, self.action_set), base, _find_smb(base))
         return self._envs[stage]
 
+    def prebuild(self):
+        """Build every stage's emulator now (~0.3 s each) instead of on first visit mid-rollout."""
+        for stage in self.stages:
+            self._get(stage)
+
     @property
     def ram(self):
         return self._smb.ram

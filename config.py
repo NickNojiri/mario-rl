@@ -92,7 +92,10 @@ class PPOConfig:
     skip: int = 4
     stack: int = 4
     no_progress_steps: int = 200
-    noop_max: int = 30
+    # Random start delay. Every reset emulates up to noop_max idle steps while the other 11 envs wait, so
+    # 30 cost ~35% rollout speed (628 vs 990 steps/s); 8 keeps start variety at 856 steps/s.
+    # eval_stages.py still evaluates with 30.
+    noop_max: int = 8
     coin_reward: float = 15.0  # raw game units; ~1 agent step of full-speed running
     flag_reward: float = 150.0
 
@@ -116,7 +119,8 @@ class PPOConfig:
     save_every: int = 250_000
     snapshot_every: int = 1_000_000
     device: str = "cpu"
-    torch_threads: int = 4
+    torch_threads: int = 8  # learning phase (envs idle): 8 threads 1.58 s/update vs 2.20 s at 4
+    rollout_threads: int = 1  # inference while 12 env workers run: 1 thread avoids contention
 
     def env_kwargs(self, stages) -> dict:
         return dict(stages=list(stages), actions=self.actions, skip=self.skip, stack=self.stack,
@@ -140,14 +144,18 @@ class PPOConfig:
         return cls(**{k: (tuple(v) if isinstance(v, list) else v) for k, v in d.items() if k in known})
 
 
-PPO_BOOKKEEPING_FIELDS = frozenset({"total_steps", "save_every", "snapshot_every", "device", "torch_threads"})
+PPO_BOOKKEEPING_FIELDS = frozenset(
+    {"total_steps", "save_every", "snapshot_every", "device", "torch_threads", "rollout_threads"})
 
 PPO_PRESETS = {
     # Every code path in about a minute: vec env, truncation bootstrap, updates, checkpoint, snapshot.
     "ppo_smoke": PPOConfig(train_stages=("1-1", "1-2"), test_stages=("1-3",), n_envs=4, rollout_len=64,
                            minibatches=4, total_steps=2_048, save_every=512, snapshot_every=1_024,
-                           no_progress_steps=40, torch_threads=2),
+                           no_progress_steps=40, torch_threads=2, rollout_threads=1),
     "ppo_full": PPOConfig(),
+    # One-hour run for fast iteration: measured 520 steps/s (12 envs, after speed fixes) x 3300 s; snapshots
+    # every ~15 min (520 x 900). Evals running alongside will stretch the wall-clock time somewhat.
+    "ppo_1h": PPOConfig(total_steps=1_716_000, snapshot_every=468_000, save_every=100_000),
 }
 
 

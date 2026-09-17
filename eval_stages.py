@@ -86,6 +86,7 @@ def main():
     p.add_argument("--seed", type=int, default=50_000)
     p.add_argument("--greedy", action="store_true")
     p.add_argument("--workers", type=int, default=12)
+    p.add_argument("--noop-max", type=int, default=30, help="random start delay at eval (training uses less)")
     p.add_argument("--out", type=Path)
     args = p.parse_args()
     if args.random == bool(args.checkpoint):
@@ -101,7 +102,7 @@ def main():
         cfg_dict = {k: v for k, v in json.loads(args.config.read_text()).items()}
     else:
         cfg_dict = get_ppo_preset("ppo_full").to_dict()
-    cfg = PPOConfig.from_dict(cfg_dict)
+    cfg = PPOConfig.from_dict({**cfg_dict, "noop_max": args.noop_max})
     train, test = cfg.resolved_stages()
     if args.stages == "all":
         chosen = [(s, "train") for s in train] + [(s, "test") for s in test]
@@ -119,6 +120,7 @@ def main():
     result = {
         "policy": "random" if args.random else str(args.checkpoint),
         "greedy": args.greedy, "episodes_per_stage": args.episodes, "base_seed": args.seed,
+        "noop_max": args.noop_max,
         "train_summary": summarize(rows, "train"), "test_summary": summarize(rows, "test"),
         "stages": rows,
     }

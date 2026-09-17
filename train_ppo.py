@@ -24,7 +24,7 @@ from agent.vec_env import SubprocVecEnv, stack_obs
 from config import PPO_BOOKKEEPING_FIELDS, PPOConfig, get_ppo_preset
 from env.tiles import ACTION_SETS, n_extras
 
-UPDATE_FIELDS = ["update", "step", "steps_per_sec", "episodes", "mean_x_pos", "flag_rate", "mean_coins",
+UPDATE_FIELDS = ["update", "step", "steps_per_sec", "rollout_sec", "learn_sec", "episodes", "mean_x_pos", "flag_rate", "mean_coins",
                  "mean_game_reward", "stall_rate", "policy_loss", "value_loss", "entropy", "approx_kl", "clipfrac",
                  "explained_variance", "wall_time"]
 EPISODE_FIELDS = ["step", "stage", "x_pos", "flag_get", "coins", "game_reward", "reward", "length", "terminated",
@@ -33,7 +33,7 @@ EPISODE_FIELDS = ["step", "stage", "x_pos", "flag_get", "coins", "game_reward", 
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--preset", choices=["ppo_smoke", "ppo_full"], default="ppo_smoke")
+    p.add_argument("--preset", choices=["ppo_smoke", "ppo_full", "ppo_1h"], default="ppo_smoke")
     p.add_argument("--run-name")
     p.add_argument("--resume", type=Path)
     p.add_argument("--allow-config-change", action="store_true")
@@ -110,6 +110,7 @@ def main():
     try:
         while agent.global_step < cfg.total_steps:
             t_upd = time.monotonic()
+            torch.set_num_threads(cfg.rollout_threads)
             episodes = []
             buf["trunc_values"][:] = 0.0
             for t in range(T):
@@ -132,6 +133,8 @@ def main():
                 obs = next_obs
                 agent.global_step += N
 
+            t_learn = time.monotonic()
+            torch.set_num_threads(cfg.torch_threads)
             adv, returns = compute_gae(buf["rewards"], buf["values"], agent.value(obs), buf["terminated"],
                                        buf["truncated"], buf["trunc_values"], cfg.gamma, cfg.gae_lambda)
             flat = lambda a: a.reshape(T * N, *a.shape[2:])
@@ -141,7 +144,9 @@ def main():
 
             mean = lambda key: float(np.mean([e[key] for e in episodes])) if episodes else ""
             row = {"update": agent.updates, "step": agent.global_step,
-                   "steps_per_sec": round(T * N / (time.monotonic() - t_upd), 1), "episodes": len(episodes),
+                   "steps_per_sec": round(T * N / (time.monotonic() - t_upd), 1),
+                   "rollout_sec": round(t_learn - t_upd, 2), "learn_sec": round(time.monotonic() - t_learn, 2),
+                   "episodes": len(episodes),
                    "mean_x_pos": mean("x_pos"), "flag_rate": mean("flag_get"), "mean_coins": mean("coins"),
                    "mean_game_reward": mean("game_reward"),
                    "stall_rate": float(np.mean([e["truncated"] for e in episodes])) if episodes else "",
