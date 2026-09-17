@@ -54,6 +54,7 @@ def _eval_stage(job: dict) -> dict:
                 break
         ep = info["episode"]
         ep["trajectory"] = hashlib.sha1(np.asarray(actions, np.int8).tobytes()).hexdigest()
+        ep["seed"] = seed
         eps.append(ep)
     env.close()
     return {
@@ -65,6 +66,9 @@ def _eval_stage(job: dict) -> dict:
         "stall_rate": float(np.mean([e["truncated"] for e in eps])),
         "mean_game_reward": float(np.mean([e["game_reward"] for e in eps])),
         "unique_trajectories": len({e["trajectory"] for e in eps}),
+        # per-episode records, so any single episode can be replayed exactly (scripts/record_gif_ppo.py)
+        "episodes_detail": [{k: e[k] for k in ("seed", "x_pos", "flag_get", "coins", "length", "terminated",
+                                                "truncated", "game_reward")} for e in eps],
     }
 
 

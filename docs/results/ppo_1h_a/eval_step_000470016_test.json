@@ -1,0 +1,78 @@
+{
+  "policy": "runs/ppo_1h_a/snapshots/step_000470016.pt",
+  "greedy": false,
+  "episodes_per_stage": 5,
+  "base_seed": 50000,
+  "noop_max": 30,
+  "train_summary": {},
+  "test_summary": {
+    "mean_x_pos": 483.2,
+    "flag_rate": 0.0,
+    "mean_coins": 0.4,
+    "stall_rate": 0.08,
+    "mean_game_reward": 412.48,
+    "stages": 5
+  },
+  "stages": [
+    {
+      "stage": "2-1",
+      "group": "test",
+      "episodes": 5,
+      "mean_x_pos": 571.0,
+      "std_x_pos": 223.00134528742197,
+      "flag_rate": 0.0,
+      "mean_coins": 0.6,
+      "stall_rate": 0.0,
+      "mean_game_reward": 498.2,
+      "unique_trajectories": 5
+    },
+    {
+      "stage": "3-3",
+      "group": "test",
+      "episodes": 5,
+      "mean_x_pos": 368.8,
+      "std_x_pos": 70.46531061451442,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 304.0,
+      "unique_trajectories": 5
+    },
+    {
+      "stage": "4-2",
+      "group": "test",
+      "episodes": 5,
+      "mean_x_pos": 318.6,
+      "std_x_pos": 122.3954247510911,
+      "flag_rate": 0.0,
+      "mean_coins": 1.0,
+      "stall_rate": 0.4,
+      "mean_game_reward": 243.6,
+      "unique_trajectories": 5
+    },
+    {
+      "stage": "5-4",
+      "group": "test",
+      "episodes": 5,
+      "mean_x_pos": 323.2,
+      "std_x_pos": 30.11577659632904,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 260.0,
+      "unique_trajectories": 5
+    },
+    {
+      "stage": "7-1",
+      "group": "test",
+      "episodes": 5,
+      "mean_x_pos": 834.4,
+      "std_x_pos": 390.87829307854895,
+      "flag_rate": 0.0,
+      "mean_coins": 0.4,
+      "stall_rate": 0.0,
+      "mean_game_reward": 756.6,
+      "unique_trajectories": 5
+    }
+  ]
+}

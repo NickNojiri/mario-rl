@@ -1,0 +1,3103 @@
+{
+  "policy": "runs/ppo_1h_a/latest.pt",
+  "greedy": false,
+  "episodes_per_stage": 10,
+  "base_seed": 50000,
+  "noop_max": 30,
+  "train_summary": {
+    "mean_x_pos": 774.3636363636361,
+    "flag_rate": 0.004545454545454546,
+    "mean_coins": 0.9090909090909091,
+    "stall_rate": 0.0,
+    "mean_game_reward": 700.9772727272729,
+    "stages": 22
+  },
+  "test_summary": {
+    "mean_x_pos": 582.0400000000001,
+    "flag_rate": 0.0,
+    "mean_coins": 0.96,
+    "stall_rate": 0.0,
+    "mean_game_reward": 511.8,
+    "stages": 5
+  },
+  "stages": [
+    {
+      "stage": "1-1",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 1227.2,
+      "std_x_pos": 450.8764354010974,
+      "flag_rate": 0.0,
+      "mean_coins": 0.4,
+      "stall_rate": 0.0,
+      "mean_game_reward": 1137.9,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 825,
+          "flag_get": false,
+          "coins": 0,
+          "length": 110,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 746.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 1433,
+          "flag_get": false,
+          "coins": 0,
+          "length": 195,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1336.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 898,
+          "flag_get": false,
+          "coins": 0,
+          "length": 221,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 799.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 1680,
+          "flag_get": false,
+          "coins": 0,
+          "length": 193,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1583.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 1785,
+          "flag_get": false,
+          "coins": 1,
+          "length": 179,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1694.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 858,
+          "flag_get": false,
+          "coins": 0,
+          "length": 154,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 770.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 1435,
+          "flag_get": false,
+          "coins": 1,
+          "length": 181,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1341.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 307,
+          "flag_get": false,
+          "coins": 0,
+          "length": 29,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 245.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 1523,
+          "flag_get": false,
+          "coins": 1,
+          "length": 191,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1427.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 1528,
+          "flag_get": false,
+          "coins": 1,
+          "length": 159,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1438.0
+        }
+      ]
+    },
+    {
+      "stage": "1-2",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 610.2,
+      "std_x_pos": 331.93909079829695,
+      "flag_rate": 0.0,
+      "mean_coins": 0.4,
+      "stall_rate": 0.0,
+      "mean_game_reward": 535.7,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 907,
+          "flag_get": false,
+          "coins": 1,
+          "length": 138,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 821.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 156,
+          "flag_get": false,
+          "coins": 0,
+          "length": 16,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 95.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 128,
+          "flag_get": false,
+          "coins": 0,
+          "length": 15,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 68.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 886,
+          "flag_get": false,
+          "coins": 1,
+          "length": 168,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 794.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 907,
+          "flag_get": false,
+          "coins": 0,
+          "length": 82,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 833.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 468,
+          "flag_get": false,
+          "coins": 0,
+          "length": 47,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 403.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 158,
+          "flag_get": false,
+          "coins": 0,
+          "length": 17,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 97.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 871,
+          "flag_get": false,
+          "coins": 1,
+          "length": 149,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 785.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 948,
+          "flag_get": false,
+          "coins": 0,
+          "length": 162,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 858.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 673,
+          "flag_get": false,
+          "coins": 1,
+          "length": 58,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 603.0
+        }
+      ]
+    },
+    {
+      "stage": "1-3",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 673.8,
+      "std_x_pos": 99.27013649633005,
+      "flag_rate": 0.0,
+      "mean_coins": 0.4,
+      "stall_rate": 0.0,
+      "mean_game_reward": 604.3,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 624,
+          "flag_get": false,
+          "coins": 1,
+          "length": 54,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 555.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 423,
+          "flag_get": false,
+          "coins": 0,
+          "length": 36,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 358.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 743,
+          "flag_get": false,
+          "coins": 0,
+          "length": 69,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 672.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 739,
+          "flag_get": false,
+          "coins": 1,
+          "length": 63,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 668.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 746,
+          "flag_get": false,
+          "coins": 0,
+          "length": 66,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 675.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 767,
+          "flag_get": false,
+          "coins": 0,
+          "length": 65,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 697.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 746,
+          "flag_get": false,
+          "coins": 0,
+          "length": 64,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 675.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 697,
+          "flag_get": false,
+          "coins": 0,
+          "length": 64,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 628.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 626,
+          "flag_get": false,
+          "coins": 1,
+          "length": 56,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 557.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 627,
+          "flag_get": false,
+          "coins": 1,
+          "length": 56,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 558.0
+        }
+      ]
+    },
+    {
+      "stage": "1-4",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 540.9,
+      "std_x_pos": 186.71124765262536,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 473.6,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 550,
+          "flag_get": false,
+          "coins": 0,
+          "length": 60,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 482.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 741,
+          "flag_get": false,
+          "coins": 0,
+          "length": 64,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 670.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 770,
+          "flag_get": false,
+          "coins": 0,
+          "length": 86,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 695.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 234,
+          "flag_get": false,
+          "coins": 0,
+          "length": 28,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 172.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 550,
+          "flag_get": false,
+          "coins": 0,
+          "length": 53,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 484.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 552,
+          "flag_get": false,
+          "coins": 0,
+          "length": 53,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 486.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 456,
+          "flag_get": false,
+          "coins": 0,
+          "length": 44,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 391.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 777,
+          "flag_get": false,
+          "coins": 0,
+          "length": 78,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 705.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 227,
+          "flag_get": false,
+          "coins": 0,
+          "length": 28,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 166.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 552,
+          "flag_get": false,
+          "coins": 0,
+          "length": 53,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 485.0
+        }
+      ]
+    },
+    {
+      "stage": "2-3",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 1814.3,
+      "std_x_pos": 594.9475691184896,
+      "flag_rate": 0.0,
+      "mean_coins": 8.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 1724.8,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 1363,
+          "flag_get": false,
+          "coins": 0,
+          "length": 119,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1281.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 1078,
+          "flag_get": false,
+          "coins": 7,
+          "length": 95,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1004.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 2805,
+          "flag_get": false,
+          "coins": 14,
+          "length": 250,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 2698.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 1333,
+          "flag_get": false,
+          "coins": 9,
+          "length": 127,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1251.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 2562,
+          "flag_get": false,
+          "coins": 8,
+          "length": 223,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 2460.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 1784,
+          "flag_get": false,
+          "coins": 12,
+          "length": 150,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1697.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 2532,
+          "flag_get": false,
+          "coins": 13,
+          "length": 236,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 2429.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 1332,
+          "flag_get": false,
+          "coins": 5,
+          "length": 137,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1249.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 1334,
+          "flag_get": false,
+          "coins": 6,
+          "length": 142,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1250.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 2020,
+          "flag_get": false,
+          "coins": 6,
+          "length": 182,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1929.0
+        }
+      ]
+    },
+    {
+      "stage": "2-4",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 733.3,
+      "std_x_pos": 471.5561578433687,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 661.3,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 1502,
+          "flag_get": false,
+          "coins": 0,
+          "length": 178,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1408.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 1307,
+          "flag_get": false,
+          "coins": 0,
+          "length": 136,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1223.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 499,
+          "flag_get": false,
+          "coins": 0,
+          "length": 48,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 434.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 294,
+          "flag_get": false,
+          "coins": 0,
+          "length": 33,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 230.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 338,
+          "flag_get": false,
+          "coins": 0,
+          "length": 32,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 274.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 297,
+          "flag_get": false,
+          "coins": 0,
+          "length": 32,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 234.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 344,
+          "flag_get": false,
+          "coins": 0,
+          "length": 33,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 279.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 366,
+          "flag_get": false,
+          "coins": 0,
+          "length": 44,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 301.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 1191,
+          "flag_get": false,
+          "coins": 0,
+          "length": 104,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1113.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 1195,
+          "flag_get": false,
+          "coins": 0,
+          "length": 102,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1117.0
+        }
+      ]
+    },
+    {
+      "stage": "3-1",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 526.2,
+      "std_x_pos": 136.77996929375294,
+      "flag_rate": 0.0,
+      "mean_coins": 0.6,
+      "stall_rate": 0.0,
+      "mean_game_reward": 456.5,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 617,
+          "flag_get": false,
+          "coins": 0,
+          "length": 105,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 539.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 511,
+          "flag_get": false,
+          "coins": 1,
+          "length": 47,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 444.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 346,
+          "flag_get": false,
+          "coins": 0,
+          "length": 46,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 281.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 817,
+          "flag_get": false,
+          "coins": 0,
+          "length": 92,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 742.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 396,
+          "flag_get": false,
+          "coins": 1,
+          "length": 41,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 330.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 607,
+          "flag_get": false,
+          "coins": 1,
+          "length": 64,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 537.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 608,
+          "flag_get": false,
+          "coins": 1,
+          "length": 60,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 539.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 352,
+          "flag_get": false,
+          "coins": 0,
+          "length": 33,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 288.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 498,
+          "flag_get": false,
+          "coins": 1,
+          "length": 99,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 424.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 510,
+          "flag_get": false,
+          "coins": 1,
+          "length": 58,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 441.0
+        }
+      ]
+    },
+    {
+      "stage": "3-2",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 1037.2,
+      "std_x_pos": 586.2231315804589,
+      "flag_rate": 0.0,
+      "mean_coins": 0.5,
+      "stall_rate": 0.0,
+      "mean_game_reward": 961.2,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 1146,
+          "flag_get": false,
+          "coins": 1,
+          "length": 98,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1068.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 379,
+          "flag_get": false,
+          "coins": 0,
+          "length": 32,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 316.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 493,
+          "flag_get": false,
+          "coins": 0,
+          "length": 47,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 428.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 2000,
+          "flag_get": false,
+          "coins": 0,
+          "length": 199,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1904.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 491,
+          "flag_get": false,
+          "coins": 0,
+          "length": 46,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 425.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 1230,
+          "flag_get": false,
+          "coins": 0,
+          "length": 127,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1148.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 495,
+          "flag_get": false,
+          "coins": 0,
+          "length": 43,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 429.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 1019,
+          "flag_get": false,
+          "coins": 2,
+          "length": 86,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 944.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 1015,
+          "flag_get": false,
+          "coins": 2,
+          "length": 88,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 940.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 2104,
+          "flag_get": false,
+          "coins": 0,
+          "length": 180,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 2010.0
+        }
+      ]
+    },
+    {
+      "stage": "3-4",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 406.8,
+      "std_x_pos": 80.26680509401132,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 342.8,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 519,
+          "flag_get": false,
+          "coins": 0,
+          "length": 49,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 453.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 516,
+          "flag_get": false,
+          "coins": 0,
+          "length": 52,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 450.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 434,
+          "flag_get": false,
+          "coins": 0,
+          "length": 38,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 372.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 274,
+          "flag_get": false,
+          "coins": 0,
+          "length": 29,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 213.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 356,
+          "flag_get": false,
+          "coins": 0,
+          "length": 34,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 293.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 418,
+          "flag_get": false,
+          "coins": 0,
+          "length": 37,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 353.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 418,
+          "flag_get": false,
+          "coins": 0,
+          "length": 39,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 352.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 434,
+          "flag_get": false,
+          "coins": 0,
+          "length": 43,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 368.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 274,
+          "flag_get": false,
+          "coins": 0,
+          "length": 29,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 214.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 425,
+          "flag_get": false,
+          "coins": 0,
+          "length": 37,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 360.0
+        }
+      ]
+    },
+    {
+      "stage": "4-1",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 1255.1,
+      "std_x_pos": 837.7915552212257,
+      "flag_rate": 0.0,
+      "mean_coins": 1.6,
+      "stall_rate": 0.0,
+      "mean_game_reward": 1171.9,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 483,
+          "flag_get": false,
+          "coins": 0,
+          "length": 46,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 415.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 477,
+          "flag_get": false,
+          "coins": 0,
+          "length": 44,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 410.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 335,
+          "flag_get": false,
+          "coins": 0,
+          "length": 43,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 270.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 1855,
+          "flag_get": false,
+          "coins": 3,
+          "length": 163,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1765.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 2169,
+          "flag_get": false,
+          "coins": 5,
+          "length": 211,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 2071.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 1850,
+          "flag_get": false,
+          "coins": 0,
+          "length": 211,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1752.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 2409,
+          "flag_get": false,
+          "coins": 6,
+          "length": 266,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 2300.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 2110,
+          "flag_get": false,
+          "coins": 2,
+          "length": 192,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 2015.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 394,
+          "flag_get": false,
+          "coins": 0,
+          "length": 87,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 320.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 469,
+          "flag_get": false,
+          "coins": 0,
+          "length": 48,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 401.0
+        }
+      ]
+    },
+    {
+      "stage": "4-3",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 492.2,
+      "std_x_pos": 84.56216648123439,
+      "flag_rate": 0.0,
+      "mean_coins": 2.5,
+      "stall_rate": 0.0,
+      "mean_game_reward": 426.4,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 563,
+          "flag_get": false,
+          "coins": 2,
+          "length": 51,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 497.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 407,
+          "flag_get": false,
+          "coins": 3,
+          "length": 36,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 343.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 408,
+          "flag_get": false,
+          "coins": 3,
+          "length": 35,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 345.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 407,
+          "flag_get": false,
+          "coins": 3,
+          "length": 35,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 342.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 584,
+          "flag_get": false,
+          "coins": 2,
+          "length": 49,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 517.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 582,
+          "flag_get": false,
+          "coins": 2,
+          "length": 51,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 514.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 408,
+          "flag_get": false,
+          "coins": 3,
+          "length": 35,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 343.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 578,
+          "flag_get": false,
+          "coins": 3,
+          "length": 49,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 511.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 576,
+          "flag_get": false,
+          "coins": 1,
+          "length": 50,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 508.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 409,
+          "flag_get": false,
+          "coins": 3,
+          "length": 35,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 344.0
+        }
+      ]
+    },
+    {
+      "stage": "5-1",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 900.8,
+      "std_x_pos": 791.2949892423179,
+      "flag_rate": 0.1,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 823.4,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 271,
+          "flag_get": false,
+          "coins": 0,
+          "length": 25,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 208.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 808,
+          "flag_get": false,
+          "coins": 0,
+          "length": 104,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 731.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 626,
+          "flag_get": false,
+          "coins": 0,
+          "length": 54,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 558.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 806,
+          "flag_get": false,
+          "coins": 0,
+          "length": 101,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 730.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 816,
+          "flag_get": false,
+          "coins": 0,
+          "length": 107,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 738.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 809,
+          "flag_get": false,
+          "coins": 0,
+          "length": 92,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 735.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 3177,
+          "flag_get": true,
+          "coins": 0,
+          "length": 432,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 3051.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 171,
+          "flag_get": false,
+          "coins": 0,
+          "length": 16,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 110.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 806,
+          "flag_get": false,
+          "coins": 0,
+          "length": 124,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 726.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 718,
+          "flag_get": false,
+          "coins": 0,
+          "length": 66,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 647.0
+        }
+      ]
+    },
+    {
+      "stage": "5-2",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 693.7,
+      "std_x_pos": 240.93237640466674,
+      "flag_rate": 0.0,
+      "mean_coins": 1.3,
+      "stall_rate": 0.0,
+      "mean_game_reward": 618.2,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 969,
+          "flag_get": false,
+          "coins": 3,
+          "length": 133,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 885.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 981,
+          "flag_get": false,
+          "coins": 2,
+          "length": 113,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 902.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 727,
+          "flag_get": false,
+          "coins": 1,
+          "length": 102,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 651.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 454,
+          "flag_get": false,
+          "coins": 1,
+          "length": 67,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 383.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 716,
+          "flag_get": false,
+          "coins": 1,
+          "length": 92,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 640.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 464,
+          "flag_get": false,
+          "coins": 0,
+          "length": 67,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 394.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 717,
+          "flag_get": false,
+          "coins": 0,
+          "length": 75,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 644.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 964,
+          "flag_get": false,
+          "coins": 1,
+          "length": 145,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 879.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 209,
+          "flag_get": false,
+          "coins": 0,
+          "length": 20,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 148.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 736,
+          "flag_get": false,
+          "coins": 4,
+          "length": 112,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 656.0
+        }
+      ]
+    },
+    {
+      "stage": "5-3",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 560.3,
+      "std_x_pos": 205.6074171813848,
+      "flag_rate": 0.0,
+      "mean_coins": 0.4,
+      "stall_rate": 0.0,
+      "mean_game_reward": 492.7,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 404,
+          "flag_get": false,
+          "coins": 0,
+          "length": 36,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 339.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 626,
+          "flag_get": false,
+          "coins": 1,
+          "length": 55,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 557.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 746,
+          "flag_get": false,
+          "coins": 0,
+          "length": 66,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 675.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 769,
+          "flag_get": false,
+          "coins": 0,
+          "length": 68,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 697.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 419,
+          "flag_get": false,
+          "coins": 0,
+          "length": 37,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 354.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 742,
+          "flag_get": false,
+          "coins": 2,
+          "length": 64,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 672.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 105,
+          "flag_get": false,
+          "coins": 0,
+          "length": 12,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 45.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 741,
+          "flag_get": false,
+          "coins": 0,
+          "length": 64,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 671.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 424,
+          "flag_get": false,
+          "coins": 0,
+          "length": 39,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 359.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 627,
+          "flag_get": false,
+          "coins": 1,
+          "length": 56,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 558.0
+        }
+      ]
+    },
+    {
+      "stage": "6-1",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 931.4,
+      "std_x_pos": 443.9590521658501,
+      "flag_rate": 0.0,
+      "mean_coins": 0.8,
+      "stall_rate": 0.0,
+      "mean_game_reward": 855.0,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 477,
+          "flag_get": false,
+          "coins": 0,
+          "length": 61,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 409.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 1618,
+          "flag_get": false,
+          "coins": 1,
+          "length": 182,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1527.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 1222,
+          "flag_get": false,
+          "coins": 0,
+          "length": 120,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1143.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 513,
+          "flag_get": false,
+          "coins": 1,
+          "length": 43,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 446.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 498,
+          "flag_get": false,
+          "coins": 0,
+          "length": 54,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 433.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 1378,
+          "flag_get": false,
+          "coins": 1,
+          "length": 152,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1293.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 494,
+          "flag_get": false,
+          "coins": 1,
+          "length": 60,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 425.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 516,
+          "flag_get": false,
+          "coins": 0,
+          "length": 55,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 449.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 1377,
+          "flag_get": false,
+          "coins": 1,
+          "length": 189,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1285.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 1221,
+          "flag_get": false,
+          "coins": 3,
+          "length": 117,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1140.0
+        }
+      ]
+    },
+    {
+      "stage": "6-2",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 444.4,
+      "std_x_pos": 225.85136705364437,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 374.0,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 308,
+          "flag_get": false,
+          "coins": 0,
+          "length": 28,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 244.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 446,
+          "flag_get": false,
+          "coins": 0,
+          "length": 50,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 380.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 372,
+          "flag_get": false,
+          "coins": 0,
+          "length": 72,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 300.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 313,
+          "flag_get": false,
+          "coins": 0,
+          "length": 33,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 248.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 308,
+          "flag_get": false,
+          "coins": 0,
+          "length": 31,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 246.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 882,
+          "flag_get": false,
+          "coins": 0,
+          "length": 267,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 780.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 315,
+          "flag_get": false,
+          "coins": 0,
+          "length": 34,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 251.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 894,
+          "flag_get": false,
+          "coins": 0,
+          "length": 128,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 812.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 304,
+          "flag_get": false,
+          "coins": 0,
+          "length": 33,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 241.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 302,
+          "flag_get": false,
+          "coins": 0,
+          "length": 38,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 238.0
+        }
+      ]
+    },
+    {
+      "stage": "6-3",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 388.5,
+      "std_x_pos": 34.8919761549844,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 325.2,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 368,
+          "flag_get": false,
+          "coins": 0,
+          "length": 36,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 305.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 376,
+          "flag_get": false,
+          "coins": 0,
+          "length": 36,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 313.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 377,
+          "flag_get": false,
+          "coins": 0,
+          "length": 37,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 315.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 368,
+          "flag_get": false,
+          "coins": 0,
+          "length": 34,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 305.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 375,
+          "flag_get": false,
+          "coins": 0,
+          "length": 37,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 312.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 372,
+          "flag_get": false,
+          "coins": 0,
+          "length": 36,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 310.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 490,
+          "flag_get": false,
+          "coins": 0,
+          "length": 42,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 424.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 373,
+          "flag_get": false,
+          "coins": 0,
+          "length": 35,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 312.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 391,
+          "flag_get": false,
+          "coins": 0,
+          "length": 36,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 326.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 395,
+          "flag_get": false,
+          "coins": 0,
+          "length": 37,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 330.0
+        }
+      ]
+    },
+    {
+      "stage": "6-4",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 467.0,
+      "std_x_pos": 229.15016910314512,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 401.2,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 453,
+          "flag_get": false,
+          "coins": 0,
+          "length": 44,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 389.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 521,
+          "flag_get": false,
+          "coins": 0,
+          "length": 45,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 454.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 1061,
+          "flag_get": false,
+          "coins": 0,
+          "length": 118,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 982.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 234,
+          "flag_get": false,
+          "coins": 0,
+          "length": 28,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 172.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 324,
+          "flag_get": false,
+          "coins": 0,
+          "length": 28,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 261.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 425,
+          "flag_get": false,
+          "coins": 0,
+          "length": 37,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 360.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 541,
+          "flag_get": false,
+          "coins": 0,
+          "length": 53,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 475.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 323,
+          "flag_get": false,
+          "coins": 0,
+          "length": 31,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 260.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 227,
+          "flag_get": false,
+          "coins": 0,
+          "length": 28,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 166.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 561,
+          "flag_get": false,
+          "coins": 0,
+          "length": 58,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 493.0
+        }
+      ]
+    },
+    {
+      "stage": "7-3",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 1052.4,
+      "std_x_pos": 362.76802505182286,
+      "flag_rate": 0.0,
+      "mean_coins": 2.9,
+      "stall_rate": 0.0,
+      "mean_game_reward": 976.5,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 582,
+          "flag_get": false,
+          "coins": 0,
+          "length": 51,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 514.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 798,
+          "flag_get": false,
+          "coins": 3,
+          "length": 74,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 725.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 1335,
+          "flag_get": false,
+          "coins": 3,
+          "length": 120,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1257.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 1077,
+          "flag_get": false,
+          "coins": 2,
+          "length": 106,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1000.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 1334,
+          "flag_get": false,
+          "coins": 5,
+          "length": 119,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1256.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 1330,
+          "flag_get": false,
+          "coins": 6,
+          "length": 116,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1252.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 580,
+          "flag_get": false,
+          "coins": 0,
+          "length": 50,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 513.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 1574,
+          "flag_get": false,
+          "coins": 3,
+          "length": 163,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1487.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 583,
+          "flag_get": false,
+          "coins": 0,
+          "length": 78,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 510.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 1331,
+          "flag_get": false,
+          "coins": 7,
+          "length": 122,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1251.0
+        }
+      ]
+    },
+    {
+      "stage": "8-1",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 952.3,
+      "std_x_pos": 653.3603982489296,
+      "flag_rate": 0.0,
+      "mean_coins": 0.2,
+      "stall_rate": 0.0,
+      "mean_game_reward": 874.1,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 558,
+          "flag_get": false,
+          "coins": 0,
+          "length": 57,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 489.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 466,
+          "flag_get": false,
+          "coins": 0,
+          "length": 42,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 400.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 1219,
+          "flag_get": false,
+          "coins": 0,
+          "length": 136,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1136.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 940,
+          "flag_get": false,
+          "coins": 0,
+          "length": 105,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 861.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 2729,
+          "flag_get": false,
+          "coins": 1,
+          "length": 347,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 2602.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 1215,
+          "flag_get": false,
+          "coins": 1,
+          "length": 138,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1132.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 819,
+          "flag_get": false,
+          "coins": 0,
+          "length": 97,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 745.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 469,
+          "flag_get": false,
+          "coins": 0,
+          "length": 42,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 404.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 479,
+          "flag_get": false,
+          "coins": 0,
+          "length": 44,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 413.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 629,
+          "flag_get": false,
+          "coins": 0,
+          "length": 69,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 559.0
+        }
+      ]
+    },
+    {
+      "stage": "8-2",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 427.9,
+      "std_x_pos": 311.75678019892365,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 360.9,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 342,
+          "flag_get": false,
+          "coins": 0,
+          "length": 49,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 277.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 344,
+          "flag_get": false,
+          "coins": 0,
+          "length": 37,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 279.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 340,
+          "flag_get": false,
+          "coins": 0,
+          "length": 53,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 275.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 372,
+          "flag_get": false,
+          "coins": 0,
+          "length": 54,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 305.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 342,
+          "flag_get": false,
+          "coins": 0,
+          "length": 51,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 276.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 343,
+          "flag_get": false,
+          "coins": 0,
+          "length": 52,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 278.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 343,
+          "flag_get": false,
+          "coins": 0,
+          "length": 45,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 278.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 344,
+          "flag_get": false,
+          "coins": 0,
+          "length": 53,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 278.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 161,
+          "flag_get": false,
+          "coins": 0,
+          "length": 16,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 100.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 1348,
+          "flag_get": false,
+          "coins": 0,
+          "length": 151,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1263.0
+        }
+      ]
+    },
+    {
+      "stage": "8-3",
+      "group": "train",
+      "episodes": 10,
+      "mean_x_pos": 900.1,
+      "std_x_pos": 96.68965818535092,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 823.9,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 865,
+          "flag_get": false,
+          "coins": 0,
+          "length": 91,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 788.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 852,
+          "flag_get": false,
+          "coins": 0,
+          "length": 86,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 777.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 852,
+          "flag_get": false,
+          "coins": 0,
+          "length": 101,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 774.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 847,
+          "flag_get": false,
+          "coins": 0,
+          "length": 92,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 772.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 847,
+          "flag_get": false,
+          "coins": 0,
+          "length": 90,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 773.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 865,
+          "flag_get": false,
+          "coins": 0,
+          "length": 89,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 790.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 846,
+          "flag_get": false,
+          "coins": 0,
+          "length": 83,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 773.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 847,
+          "flag_get": false,
+          "coins": 0,
+          "length": 95,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 773.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 1052,
+          "flag_get": false,
+          "coins": 0,
+          "length": 118,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 972.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 1128,
+          "flag_get": false,
+          "coins": 0,
+          "length": 126,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1047.0
+        }
+      ]
+    },
+    {
+      "stage": "2-1",
+      "group": "test",
+      "episodes": 10,
+      "mean_x_pos": 666.2,
+      "std_x_pos": 392.3204812395091,
+      "flag_rate": 0.0,
+      "mean_coins": 0.5,
+      "stall_rate": 0.0,
+      "mean_game_reward": 588.9,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 918,
+          "flag_get": false,
+          "coins": 1,
+          "length": 142,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 831.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 735,
+          "flag_get": false,
+          "coins": 0,
+          "length": 134,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 652.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 441,
+          "flag_get": false,
+          "coins": 0,
+          "length": 60,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 373.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 433,
+          "flag_get": false,
+          "coins": 0,
+          "length": 59,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 365.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 454,
+          "flag_get": false,
+          "coins": 0,
+          "length": 60,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 385.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 315,
+          "flag_get": false,
+          "coins": 0,
+          "length": 41,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 249.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 912,
+          "flag_get": false,
+          "coins": 2,
+          "length": 136,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 827.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 457,
+          "flag_get": false,
+          "coins": 0,
+          "length": 48,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 390.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 338,
+          "flag_get": false,
+          "coins": 0,
+          "length": 36,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 276.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 1659,
+          "flag_get": false,
+          "coins": 2,
+          "length": 302,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1541.0
+        }
+      ]
+    },
+    {
+      "stage": "3-3",
+      "group": "test",
+      "episodes": 10,
+      "mean_x_pos": 827.5,
+      "std_x_pos": 294.34444108900715,
+      "flag_rate": 0.0,
+      "mean_coins": 3.8,
+      "stall_rate": 0.0,
+      "mean_game_reward": 753.6,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 964,
+          "flag_get": false,
+          "coins": 3,
+          "length": 98,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 886.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 1355,
+          "flag_get": false,
+          "coins": 7,
+          "length": 141,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1269.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 819,
+          "flag_get": false,
+          "coins": 5,
+          "length": 73,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 747.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 1012,
+          "flag_get": false,
+          "coins": 8,
+          "length": 88,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 936.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 417,
+          "flag_get": false,
+          "coins": 0,
+          "length": 46,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 351.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 443,
+          "flag_get": false,
+          "coins": 0,
+          "length": 39,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 378.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 1036,
+          "flag_get": false,
+          "coins": 7,
+          "length": 100,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 958.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 989,
+          "flag_get": false,
+          "coins": 5,
+          "length": 109,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 911.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 442,
+          "flag_get": false,
+          "coins": 0,
+          "length": 40,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 377.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 798,
+          "flag_get": false,
+          "coins": 3,
+          "length": 85,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 723.0
+        }
+      ]
+    },
+    {
+      "stage": "4-2",
+      "group": "test",
+      "episodes": 10,
+      "mean_x_pos": 250.9,
+      "std_x_pos": 43.87584757016097,
+      "flag_rate": 0.0,
+      "mean_coins": 0.0,
+      "stall_rate": 0.0,
+      "mean_game_reward": 189.2,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 197,
+          "flag_get": false,
+          "coins": 0,
+          "length": 22,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 136.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 263,
+          "flag_get": false,
+          "coins": 0,
+          "length": 28,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 202.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 197,
+          "flag_get": false,
+          "coins": 0,
+          "length": 23,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 138.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 341,
+          "flag_get": false,
+          "coins": 0,
+          "length": 33,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 276.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 202,
+          "flag_get": false,
+          "coins": 0,
+          "length": 26,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 141.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 269,
+          "flag_get": false,
+          "coins": 0,
+          "length": 28,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 207.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 263,
+          "flag_get": false,
+          "coins": 0,
+          "length": 29,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 201.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 260,
+          "flag_get": false,
+          "coins": 0,
+          "length": 30,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 200.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 226,
+          "flag_get": false,
+          "coins": 0,
+          "length": 24,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 164.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 291,
+          "flag_get": false,
+          "coins": 0,
+          "length": 29,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 227.0
+        }
+      ]
+    },
+    {
+      "stage": "5-4",
+      "group": "test",
+      "episodes": 10,
+      "mean_x_pos": 598.5,
+      "std_x_pos": 418.5191154535238,
+      "flag_rate": 0.0,
+      "mean_coins": 0.2,
+      "stall_rate": 0.0,
+      "mean_game_reward": 529.8,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 744,
+          "flag_get": false,
+          "coins": 0,
+          "length": 70,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 672.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 501,
+          "flag_get": false,
+          "coins": 0,
+          "length": 51,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 435.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 474,
+          "flag_get": false,
+          "coins": 0,
+          "length": 41,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 408.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 294,
+          "flag_get": false,
+          "coins": 0,
+          "length": 33,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 230.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 338,
+          "flag_get": false,
+          "coins": 0,
+          "length": 32,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 274.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 297,
+          "flag_get": false,
+          "coins": 0,
+          "length": 32,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 234.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 343,
+          "flag_get": false,
+          "coins": 0,
+          "length": 33,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 279.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 742,
+          "flag_get": false,
+          "coins": 0,
+          "length": 77,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 669.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 1763,
+          "flag_get": false,
+          "coins": 2,
+          "length": 167,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1675.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 489,
+          "flag_get": false,
+          "coins": 0,
+          "length": 42,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 422.0
+        }
+      ]
+    },
+    {
+      "stage": "7-1",
+      "group": "test",
+      "episodes": 10,
+      "mean_x_pos": 567.1,
+      "std_x_pos": 301.0247332031041,
+      "flag_rate": 0.0,
+      "mean_coins": 0.3,
+      "stall_rate": 0.0,
+      "mean_game_reward": 497.5,
+      "unique_trajectories": 10,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 393,
+          "flag_get": false,
+          "coins": 0,
+          "length": 41,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 326.0
+        },
+        {
+          "seed": 50001,
+          "x_pos": 285,
+          "flag_get": false,
+          "coins": 0,
+          "length": 24,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 222.0
+        },
+        {
+          "seed": 50002,
+          "x_pos": 355,
+          "flag_get": false,
+          "coins": 0,
+          "length": 42,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 291.0
+        },
+        {
+          "seed": 50003,
+          "x_pos": 1191,
+          "flag_get": false,
+          "coins": 1,
+          "length": 142,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 1107.0
+        },
+        {
+          "seed": 50004,
+          "x_pos": 388,
+          "flag_get": false,
+          "coins": 0,
+          "length": 34,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 324.0
+        },
+        {
+          "seed": 50005,
+          "x_pos": 363,
+          "flag_get": false,
+          "coins": 0,
+          "length": 39,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 298.0
+        },
+        {
+          "seed": 50006,
+          "x_pos": 665,
+          "flag_get": false,
+          "coins": 1,
+          "length": 64,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 594.0
+        },
+        {
+          "seed": 50007,
+          "x_pos": 947,
+          "flag_get": false,
+          "coins": 0,
+          "length": 115,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 867.0
+        },
+        {
+          "seed": 50008,
+          "x_pos": 800,
+          "flag_get": false,
+          "coins": 1,
+          "length": 89,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 726.0
+        },
+        {
+          "seed": 50009,
+          "x_pos": 284,
+          "flag_get": false,
+          "coins": 0,
+          "length": 27,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 220.0
+        }
+      ]
+    }
+  ]
+}

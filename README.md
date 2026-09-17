@@ -49,7 +49,7 @@ Next run: add the previous action as a network input.
 
 Full write-up: [docs/mario_rl_report.pdf](docs/mario_rl_report.pdf)
 
-## v2: PPO on tile grids across real stages (in progress)
+## v2: PPO on tile grids across real stages
 
 Goal: learn Mario's *mechanics*, measured on real levels the agent never trains on.
 
@@ -63,12 +63,56 @@ Goal: learn Mario's *mechanics*, measured on real levels the agent never trains 
 - **Algorithm:** PPO with 12 parallel emulators; truncated episodes bootstrap from the real final observation.
 
 ```bash
-python train_ppo.py --preset ppo_smoke
-python train_ppo.py --preset ppo_full --run-name ppo_tiles_1
-python eval_stages.py runs/ppo_tiles_1/latest.pt
-python eval_stages.py --random --config runs/ppo_tiles_1/config.json
-python -m scripts.render_tiles --stage 1-1      # check the RAM tile decoding by eye
+python train_ppo.py --preset ppo_smoke                       # ~10 s, every code path
+python train_ppo.py --preset ppo_1h --run-name ppo_1h_a      # ~1.7M steps, ~53 min at ~540 steps/s
+python eval_stages.py runs/ppo_1h_a/latest.pt                # train + held-out stages
+python eval_stages.py --random --config runs/ppo_1h_a/config.json
+python -m scripts.compare_evals runs/ppo_1h_a/eval_final_all.json runs/ppo_1h_a/eval_random_all.json
+python -m scripts.render_tiles --stage 1-1                   # check the RAM tile decoding by eye
 ```
+
+### v2 results: a 1-hour run, not a finished agent
+
+`ppo_1h_a`: 1.72M steps in 53 minutes (Ryzen 7 7800X3D, CPU only, ~540 steps/s). One training seed.
+
+![PPO agent on held-out castle 5-4](docs/media/ppo_1h_heldout_5-4_best.gif)
+
+*Best case, not typical: the single best of 50 held-out eval episodes. Stage 5-4 is a castle the agent never
+trained on. It jumps past a fire bar and over lava, reaches x_pos 1763, then dies. On held-out stages the agent
+reached the flag in **0 of 50** episodes, and its mean x_pos on 5-4 was 598. Replay:
+`python -m scripts.record_gif_ppo runs/ppo_1h_a/latest.pt --stage 5-4 --seed 50008 --out <file>.gif`*
+
+**Eval protocol:** 10 episodes per stage, seeds 50000-50009, random start delay of 0-30 steps, actions
+sampled from the policy. The random baseline uses the same protocol. Mean x_pos is how far Mario got; ± is
+the standard error; z is the difference divided by its standard error.
+
+| Stages | Trained agent | Random policy | Ratio | Evidence | Flags reached |
+|---|---|---|---|---|---|
+| Training (22 stages) | **774** | 443 | 1.75x | z = 10.6; clearly ahead on 17 of 22 | 1 / 220 episodes |
+| **Held out (5 stages)** | **582** | 382 | **1.52x** | z = 3.9 as a group; clearly ahead on 1 of 5 | **0 / 50** |
+
+| Held-out stage | Trained agent | Random policy | Difference |
+|---|---|---|---|
+| 2-1 overworld | 666 ± 124 | 554 ± 91 | +112 (within noise) |
+| 3-3 athletic | 828 ± 93 | 324 ± 17 | **+504 (z = 5.3)** |
+| 4-2 underground | 251 ± 14 | 239 ± 16 | +12 (no difference) |
+| 5-4 castle | 598 ± 132 | 387 ± 47 | +211 (within noise) |
+| 7-1 overworld | 567 ± 95 | 405 ± 61 | +162 (within noise) |
+
+**What the numbers show:**
+- **On levels it trained on, it clearly learned.** It goes 1.75x as far as random and is clearly ahead on 17 of 22 stages.
+  During training, mean episode distance rose from 547 to 868 and was still rising when the hour ended. It reached the
+  flag 29 times in training (1-1, 3-2, 4-1, 6-1).
+- **On levels it never saw, there is an early but weak sign of transfer.** As a group, held-out stages beat random
+  (z = 3.9), but only one stage (3-3) is clearly better on its own. Underground 4-2 is no better than random, and no
+  held-out level was completed.
+- **Checkpoints during the hour were noisy.** Held-out mean x_pos at the 15-, 30- and 45-minute snapshots was 483,
+  391 and 466 (5 episodes per stage), against 382 for random. Treat any single mid-run number with caution.
+- **Caveats:** one seed; 10 episodes per stage; x_pos is not normalized by level length; the random start delay was
+  0-8 steps in training but 0-30 in eval.
+
+Next: longer runs (the training curve had not flattened), 3+ seeds, and progress measured as a fraction of each level.
+Raw eval data: [docs/results/ppo_1h_a](docs/results/ppo_1h_a).
 
 ## Decisions that aren't obvious from the code
 
