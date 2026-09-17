@@ -129,6 +129,7 @@ class TileMarioEnv:
         self._no_progress_steps, self._noop_max = no_progress_steps, noop_max
         self._coin_reward, self._flag_reward = coin_reward, flag_reward
         self._render_mode = render_mode
+        self.frame_callback = None  # optional fn() called after every emulator frame (live demo rendering)
         self._envs: dict[str, tuple] = {}
         self._rng = np.random.default_rng()
         self.stage = None
@@ -222,6 +223,8 @@ class TileMarioEnv:
         for _ in range(self._skip):
             _, r, terminated, truncated, info = env.step(action)
             total += r
+            if self.frame_callback is not None:
+                self.frame_callback()
             if terminated or truncated:
                 break
         return total, bool(terminated), bool(truncated), info
