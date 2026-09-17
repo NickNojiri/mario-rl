@@ -91,9 +91,10 @@ TEST_STAGES = ["2-1", "3-3", "4-2", "5-4", "7-1"]
 TRAIN_STAGES = [s for s in ALL_STAGES if s not in EXCLUDED_STAGES and s not in TEST_STAGES]
 
 
-def n_extras(n_actions: int, obs_version: int = 2) -> int:
+def n_extras(n_actions: int, obs_version: int = 2, modes: bool = False) -> int:
+    """modes=True adds the play-style one-hot (only used by reward_version 4)."""
     return (n_actions + 2 + N_FLOAT_STATES + N_POWERUPS + (3 if obs_version >= 3 else 0)
-            + (N_HINTS + len(MODES) if obs_version >= 4 else 0))
+            + (N_HINTS if obs_version >= 4 else 0) + (len(MODES) if modes else 0))
 
 
 def _s8(v) -> int:
@@ -287,7 +288,8 @@ class TileMarioEnv:
         self._archive: dict[str, list] = {}  # stage -> [(noops, joypad action prefix)] just before recent deaths
         self.mode = MODES[0]
         self.obs_version, self.reward_version = obs_version, reward_version
-        self.n_extras = n_extras(self.n_actions, obs_version)
+        self.uses_modes = reward_version >= 4
+        self.n_extras = n_extras(self.n_actions, obs_version, self.uses_modes)
         self._skip, self._stack = skip, stack
         self._no_progress_steps, self._noop_max = no_progress_steps, noop_max
         self._coin_reward, self._flag_reward = coin_reward, flag_reward
@@ -527,6 +529,8 @@ class TileMarioEnv:
         if self.obs_version >= 3:
             obs["enemy_ids"], obs["enemy_states"], obs["enemies"] = read_enemies(ram)
         if self.obs_version >= 4:
-            mode = np.array([self.mode == m for m in MODES], np.float32)
-            obs["extras"] = np.concatenate([obs["extras"], read_hints(ram), mode])
+            parts = [obs["extras"], read_hints(ram)]
+            if self.uses_modes:
+                parts.append(np.array([self.mode == m for m in MODES], np.float32))
+            obs["extras"] = np.concatenate(parts)
         return obs

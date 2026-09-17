@@ -187,6 +187,8 @@ PPO_PRESETS = {
                             obs_version=3),
     "ppo_1h_v3d": PPOConfig(total_steps=1_716_000, snapshot_every=468_000, save_every=100_000, reward_version=3,
                             obs_version=3, actions="complex"),
+    # Sweep base: the v3b reward (best held-out so far), short enough to rank many variants (~15 min each).
+    "ppo_sweep": PPOConfig(reward_version=3, total_steps=480_000, save_every=240_000, snapshot_every=10 ** 9),
     # v4: macros + physics hints + safe/insane modes + practice before deaths + prioritized stages
     "ppo_1h_v4": PPOConfig(total_steps=1_716_000, snapshot_every=468_000, save_every=100_000, reward_version=4,
                            obs_version=4, actions="simple_macro", practice_prob=0.25, plr=True),

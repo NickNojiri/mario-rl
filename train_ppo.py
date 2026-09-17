@@ -13,7 +13,7 @@ import json
 import random
 import signal
 import time
-from dataclasses import replace
+from dataclasses import fields, replace
 from pathlib import Path
 
 import numpy as np
@@ -34,7 +34,7 @@ EPISODE_FIELDS = ["step", "stage", "mode", "practice", "x_pos", "max_x", "flag_g
                   "hurts", "jumps", "left_presses", "noop_presses", "game_reward", "reward", "length", "terminated",
                   "truncated", "r_progress", "r_time", "r_death", "r_hurt", "r_points", "r_coins", "r_flag"]
 PRESETS = ["ppo_smoke", "ppo_full", "ppo_1h", "ppo_1h_v3b", "ppo_1h_v3c", "ppo_1h_v3d", "ppo_smoke_v3",
-           "ppo_1h_v4", "ppo_smoke_v4"]
+           "ppo_1h_v4", "ppo_smoke_v4", "ppo_sweep"]
 
 
 def parse_args():
@@ -49,7 +49,31 @@ def parse_args():
     p.add_argument("--coin-reward", type=float)
     p.add_argument("--flag-reward", type=float)
     p.add_argument("--seed", type=int)
+    p.add_argument("--set", nargs="*", default=[], metavar="KEY=VALUE",
+                   help="override any config field, e.g. --set lr=0.0005 ent_coef=0.03 actions=simple_macro")
     return p.parse_args()
+
+
+def parse_set(pairs: list[str]) -> dict:
+    """Type the KEY=VALUE overrides from the PPOConfig dataclass fields."""
+    types = {f.name: f.type for f in fields(PPOConfig)}
+    out = {}
+    for pair in pairs:
+        key, _, raw = pair.partition("=")
+        if key not in types:
+            raise SystemExit(f"unknown config field: {key}")
+        t = types[key]
+        if t == "bool":
+            out[key] = raw.lower() in ("1", "true", "yes")
+        elif t == "int":
+            out[key] = int(raw)
+        elif t == "float":
+            out[key] = float(raw)
+        elif t == "tuple":
+            out[key] = tuple(x for x in raw.split(",") if x)
+        else:
+            out[key] = raw
+    return out
 
 
 def main():
@@ -59,6 +83,7 @@ def main():
                                    "n_envs": args.n_envs,
                                    "coin_reward": args.coin_reward, "flag_reward": args.flag_reward,
                                    "seed": args.seed}.items() if v is not None}
+    overrides.update(parse_set(args.set))
     if args.resume:
         ckpt = torch.load(args.resume, map_location="cpu", weights_only=False)
         cfg = replace(PPOConfig.from_dict(ckpt["config"]), **overrides)
@@ -80,7 +105,7 @@ def main():
     assert not set(train_stages) & set(test_stages), "held-out stages leaked into training"
     n_joy = len(ACTION_SETS[cfg.actions])
     macros = MACRO_SETS.get(cfg.actions, [])
-    agent = PPOAgent(cfg, n_policy_actions(cfg.actions), n_extras(n_joy, cfg.obs_version))
+    agent = PPOAgent(cfg, n_policy_actions(cfg.actions), n_extras(n_joy, cfg.obs_version, cfg.reward_version >= 4))
     if args.resume:
         agent.load(args.resume, allow_config_change=args.allow_config_change)
         print(f"resumed step={agent.global_step} updates={agent.updates}")

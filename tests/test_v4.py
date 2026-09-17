@@ -92,10 +92,19 @@ def test_long_macro_jumps_farther_than_tap():
 def test_v4_obs_has_hints_and_mode():
     env = make()
     obs, info = env.reset(seed=0, mode="insane")
-    assert obs["extras"].shape == (n_extras(env.n_actions, 4),)
+    assert obs["extras"].shape == (n_extras(env.n_actions, 4, modes=True),)
     hints, mode = obs["extras"][-N_HINTS - len(MODES):-len(MODES)], obs["extras"][-len(MODES):]
     assert list(mode) == [0.0, 1.0] and info["mode"] == "insane"
     assert hints[0] == 1.0 and hints[1] == 0.0 and (hints[3:7] == 1).all(), "no pit within 10 tiles at 1-1 start"
+    env.close()
+
+
+def test_hints_without_modes():
+    """obs_version 4 with an older reward gives hints but no play-style one-hot (sweeps run without modes)."""
+    env = make(reward_version=3)
+    obs, _ = env.reset(seed=0)
+    assert not env.uses_modes
+    assert obs["extras"].shape == (n_extras(env.n_actions, 4, modes=False),)
     env.close()
 
 
