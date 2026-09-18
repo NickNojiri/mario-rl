@@ -27,14 +27,16 @@ from env.tiles import ACTION_SETS, MACRO_SETS, n_extras, n_policy_actions
 UPDATE_FIELDS = ["update", "step", "steps_per_sec", "rollout_sec", "learn_sec", "episodes", "mean_x_pos", "flag_rate",
                  "mean_coins", "mean_game_reward", "stall_rate", "pit_death_rate", "enemy_death_rate", "left_share",
                  "noop_share", "points_per_episode", "hurts_per_episode", "practice_episodes",
-                 "practice_pit_death_rate", "decision_share", "policy_loss", "value_loss", "entropy", "approx_kl",
+                 "practice_pit_death_rate", "decision_share", "gen_episodes", "gen_flag_rate", "real_x_pos",
+                 "policy_loss", "value_loss", "entropy", "approx_kl",
                  "clipfrac", "explained_variance", "wall_time"]
-EPISODE_FIELDS = ["step", "stage", "mode", "practice", "x_pos", "max_x", "flag_get", "death_cause", "coins", "points",
+EPISODE_FIELDS = ["step", "stage", "mode", "practice", "procgen", "difficulty", "x_pos", "max_x", "flag_get",
+                  "death_cause", "coins", "points",
                   "point_events",
                   "hurts", "jumps", "left_presses", "noop_presses", "game_reward", "reward", "length", "terminated",
                   "truncated", "r_progress", "r_time", "r_death", "r_hurt", "r_points", "r_coins", "r_flag"]
 PRESETS = ["ppo_smoke", "ppo_full", "ppo_1h", "ppo_1h_v3b", "ppo_1h_v3c", "ppo_1h_v3d", "ppo_smoke_v3",
-           "ppo_1h_v4", "ppo_smoke_v4", "ppo_sweep"]
+           "ppo_1h_v4", "ppo_smoke_v4", "ppo_sweep", "ppo_1h_gen"]
 
 
 def parse_args():
@@ -210,6 +212,7 @@ def main():
                 envs.set_stage_weights(weights)
 
             practice_eps = [e for e in episodes if e.get("practice")]
+            gen_eps = [e for e in episodes if e.get("procgen")]
             episodes = [e for e in episodes if not e.get("practice")]  # progress stats from real starts only
             mean = lambda key: float(np.mean([e[key] for e in episodes])) if episodes else ""
             share = lambda pred: float(np.mean([pred(e) for e in episodes])) if episodes else ""
@@ -230,6 +233,10 @@ def main():
                    "practice_pit_death_rate": (float(np.mean([e["death_cause"] == "pit" for e in practice_eps]))
                                                if practice_eps else ""),
                    "decision_share": round(float(keep.mean()), 3),
+                   "gen_episodes": len(gen_eps),
+                   "gen_flag_rate": float(np.mean([e["flag_get"] for e in gen_eps])) if gen_eps else "",
+                   "real_x_pos": (float(np.mean([e["x_pos"] for e in episodes if not e.get("procgen")]))
+                                  if any(not e.get("procgen") for e in episodes) else ""),
                    **{k: round(v, 5) for k, v in stats.items()},
                    "wall_time": round(time.monotonic() - t_start, 1)}
             upd_writer.writerow(row)

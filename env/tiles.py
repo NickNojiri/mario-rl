@@ -43,6 +43,8 @@ import numpy as np
 from gym_super_mario_bros.actions import COMPLEX_MOVEMENT, RIGHT_ONLY, SIMPLE_MOVEMENT
 from nes_py.wrappers import JoypadSpace
 
+from env.procgen import LevelGenerator, TerrainPatcher
+
 warnings.filterwarnings("ignore", module=r"gym\.envs\.registration")
 
 ROWS, COLS = 13, 16
@@ -89,6 +91,9 @@ EXCLUDED_STAGES = ["2-2", "7-2", "4-4", "7-4", "8-4"]
 # Held out from training: one of each level type, spread across worlds.
 TEST_STAGES = ["2-1", "3-3", "4-2", "5-4", "7-1"]
 TRAIN_STAGES = [s for s in ALL_STAGES if s not in EXCLUDED_STAGES and s not in TEST_STAGES]
+# Overworld and athletic training stages used as bases for generated terrain (they end in a flagpole and have no
+# ceiling). Held-out stages are never used as bases.
+PROCGEN_BASE_STAGES = ["1-1", "1-3", "3-1", "3-2", "4-1", "5-1", "5-2", "5-3", "6-1", "6-3", "8-1", "8-2", "8-3"]
 
 
 def n_extras(n_actions: int, obs_version: int = 2, modes: bool = False) -> int:
@@ -276,8 +281,14 @@ class TileMarioEnv:
         points_cap: float = 150.0,
         mode_safe_prob: float = 0.5,
         practice_prob: float = 0.0,
+        procgen_prob: float = 0.0,
+        procgen_stages=None,
+        procgen_difficulty: float = 1.0,
         render_mode: str | None = None,
     ):
+        self._procgen_prob, self._procgen_difficulty = procgen_prob, procgen_difficulty
+        self._procgen_stages = [s for s in (procgen_stages or PROCGEN_BASE_STAGES) if s in stages] or list(stages)
+        self._patcher = None
         self.stages = list(stages)
         self.action_set = ACTION_SETS[actions]
         self.n_actions = len(self.action_set)  # joypad actions (what the emulator receives)
@@ -316,7 +327,7 @@ class TileMarioEnv:
 
     def prebuild(self):
         """Build every stage's emulator now (~0.3 s each) instead of on first visit mid-rollout."""
-        for stage in self.stages:
+        for stage in set(self.stages) | set(self._procgen_stages if self._procgen_prob > 0 else []):
             self._get(stage)
 
     @property
@@ -336,15 +347,27 @@ class TileMarioEnv:
         self._stage_weights = w / w.sum() if w.sum() > 0 else None
 
     def reset(self, seed: int | None = None, stage: str | None = None, mode: str | None = None,
-              practice: bool | None = None):
+              practice: bool | None = None, procgen: bool | None = None, difficulty: float | None = None):
         if seed is not None:
             self._rng = np.random.default_rng(seed)
+        if procgen is None:
+            procgen = stage is None and self._rng.random() < self._procgen_prob
+        self._patcher = None
+        if procgen:  # generated terrain on an overworld base stage (real physics, enemies, timer and flag)
+            if stage is None:
+                stage = self._procgen_stages[int(self._rng.integers(len(self._procgen_stages)))]
+            d = float(self._rng.uniform(0.0, self._procgen_difficulty)) if difficulty is None else difficulty
+            self._patcher = TerrainPatcher(LevelGenerator(int(self._rng.integers(2 ** 31)), d))
+            practice = False
         if stage is None:
             idx = (self._rng.choice(len(self.stages), p=self._stage_weights) if self._stage_weights is not None
                    else self._rng.integers(len(self.stages)))
             stage = self.stages[int(idx)]
         self.stage = stage
-        self.mode = mode or (MODES[0] if self._rng.random() < self._mode_safe_prob else MODES[1])
+        if self.uses_modes:
+            self.mode = mode or (MODES[0] if self._rng.random() < self._mode_safe_prob else MODES[1])
+        else:
+            self.mode = "none"
         self._joypad, self._base, self._smb = self._get(self.stage)
 
         entries = self._archive.get(self.stage, [])
@@ -373,6 +396,8 @@ class TileMarioEnv:
         self.frame_callback = callback
         self._noops, self._actions = noops, list(prefix)
         self.practice = practice
+        if self._patcher is not None:
+            self._patcher.update(self.ram)
 
         grid = read_tile_grid(self.ram)
         self._grids = [grid] * self._stack
@@ -389,13 +414,18 @@ class TileMarioEnv:
         self._ep = {"stage": self.stage, "reward": 0.0, "game_reward": 0.0, "length": 0, "coins": 0, "x_pos": 0,
                     "max_x": 0, "flag_get": False, "left_presses": 0, "noop_presses": 0, "jumps": 0,
                     "point_events": 0, "points": 0, "hurts": 0, "death_cause": "", "mode": self.mode,
-                    "practice": practice, **{f"r_{k}": 0.0 for k in REWARD_COMPONENTS}}
-        return self._obs(), {"stage": self.stage, "mode": self.mode, "practice": practice}
+                    "practice": practice, "procgen": self._patcher is not None,
+                    "difficulty": round(self._patcher.gen.d, 3) if self._patcher else "",
+                    **{f"r_{k}": 0.0 for k in REWARD_COMPONENTS}}
+        return self._obs(), {"stage": self.stage, "mode": self.mode, "practice": practice,
+                             "procgen": self._patcher is not None}
 
     def step(self, action: int):
         action = int(action)
         game_reward, terminated, truncated, info = self._raw_skip(action, use_joypad=True)
         ram = self.ram
+        if self._patcher is not None:
+            self._patcher.update(ram)  # before the grid is read, so observations show generated terrain
         flag = bool(info["flag_get"])
         x = int(info["x_pos"])
 
@@ -450,7 +480,7 @@ class TileMarioEnv:
         self._actions.append(action)
         if died:
             ep["death_cause"] = self._death_cause(info)
-            if self._practice_prob > 0:
+            if self._practice_prob > 0 and self._patcher is None:  # generated terrain can't be replayed
                 self._remember_before_death()
         self._grids = self._grids[1:] + [read_tile_grid(ram)]
         ep["jumps"] += int(action in self._jump and self._prev_action not in self._jump)

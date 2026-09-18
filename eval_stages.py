@@ -124,7 +124,7 @@ def main():
     else:
         cfg_dict = get_ppo_preset("ppo_full").to_dict()
     # Evaluation never uses training-only aids: no practice returns, uniform stages (each job fixes its stage).
-    cfg = PPOConfig.from_dict({**cfg_dict, "noop_max": args.noop_max, "practice_prob": 0.0})
+    cfg = PPOConfig.from_dict({**cfg_dict, "noop_max": args.noop_max, "practice_prob": 0.0, "procgen_prob": 0.0})
     train, test = cfg.resolved_stages()
     if args.stages == "all":
         chosen = [(s, "train") for s in train] + [(s, "test") for s in test]

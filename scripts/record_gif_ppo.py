@@ -31,7 +31,7 @@ args = p.parse_args()
 
 torch.set_num_threads(1)
 ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-cfg = PPOConfig.from_dict({**ckpt["config"], "noop_max": args.noop_max, "practice_prob": 0.0})
+cfg = PPOConfig.from_dict({**ckpt["config"], "noop_max": args.noop_max, "practice_prob": 0.0, "procgen_prob": 0.0})
 env = TileMarioEnv(**cfg.env_kwargs([args.stage]))
 stepper = MacroStepper(env, cfg.actions)
 agent = PPOAgent(cfg, env.n_policy_actions, env.n_extras)
