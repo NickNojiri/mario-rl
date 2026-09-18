@@ -120,6 +120,11 @@ def main():
 
     def open_csv(name, fields):
         path = run_dir / name
+        if path.exists():
+            with open(path, newline="") as existing:
+                header = next(csv.reader(existing), [])
+            if header != fields:  # resumed with a different logging schema: keep the old file, start a new one
+                path.rename(path.with_name(f"{path.stem}_upto_{agent.global_step}{path.suffix}"))
         new = not path.exists()
         f = open(path, "a", newline="")
         w = csv.DictWriter(f, fieldnames=fields)
