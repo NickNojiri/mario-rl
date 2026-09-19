@@ -30,13 +30,14 @@ UPDATE_FIELDS = ["update", "step", "steps_per_sec", "rollout_sec", "learn_sec", 
                  "practice_pit_death_rate", "decision_share", "gen_episodes", "gen_flag_rate", "real_x_pos",
                  "policy_loss", "value_loss", "entropy", "approx_kl",
                  "clipfrac", "explained_variance", "wall_time"]
-EPISODE_FIELDS = ["step", "stage", "mode", "practice", "procgen", "difficulty", "x_pos", "max_x", "flag_get",
+EPISODE_FIELDS = ["step", "stage", "mode", "practice", "procgen", "difficulty", "enemy_speed", "clock", "x_pos",
+                  "max_x", "flag_get",
                   "death_cause", "coins", "points",
                   "point_events",
                   "hurts", "jumps", "left_presses", "noop_presses", "game_reward", "reward", "length", "terminated",
                   "truncated", "r_progress", "r_time", "r_death", "r_hurt", "r_points", "r_coins", "r_flag"]
 PRESETS = ["ppo_smoke", "ppo_full", "ppo_1h", "ppo_1h_v3b", "ppo_1h_v3c", "ppo_1h_v3d", "ppo_smoke_v3",
-           "ppo_1h_v4", "ppo_smoke_v4", "ppo_sweep", "ppo_1h_gen"]
+           "ppo_1h_v4", "ppo_smoke_v4", "ppo_sweep", "ppo_1h_gen", "ppo_gen2"]
 
 
 def parse_args():

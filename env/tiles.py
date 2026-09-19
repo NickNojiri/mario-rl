@@ -284,9 +284,14 @@ class TileMarioEnv:
         procgen_prob: float = 0.0,
         procgen_stages=None,
         procgen_difficulty: float = 1.0,
+        procgen_enemy_speed: float = 1.0,
+        procgen_clock_min: int = 400,
         render_mode: str | None = None,
     ):
         self._procgen_prob, self._procgen_difficulty = procgen_prob, procgen_difficulty
+        # "faster": on generated levels, ground walkers move up to procgen_enemy_speed x faster and the clock
+        # starts anywhere in [procgen_clock_min, 400] (running out of time kills Mario)
+        self._procgen_enemy_speed, self._procgen_clock_min = procgen_enemy_speed, procgen_clock_min
         self._procgen_stages = [s for s in (procgen_stages or PROCGEN_BASE_STAGES) if s in stages] or list(stages)
         self._patcher = None
         self.stages = list(stages)
@@ -352,12 +357,14 @@ class TileMarioEnv:
             self._rng = np.random.default_rng(seed)
         if procgen is None:
             procgen = stage is None and self._rng.random() < self._procgen_prob
-        self._patcher = None
+        self._patcher, self._clock = None, None
         if procgen:  # generated terrain on an overworld base stage (real physics, enemies, timer and flag)
             if stage is None:
                 stage = self._procgen_stages[int(self._rng.integers(len(self._procgen_stages)))]
             d = float(self._rng.uniform(0.0, self._procgen_difficulty)) if difficulty is None else difficulty
-            self._patcher = TerrainPatcher(LevelGenerator(int(self._rng.integers(2 ** 31)), d))
+            speed = float(self._rng.uniform(1.0, max(1.0, self._procgen_enemy_speed)))
+            self._patcher = TerrainPatcher(LevelGenerator(int(self._rng.integers(2 ** 31)), d), enemy_speed=speed)
+            self._clock = int(self._rng.integers(self._procgen_clock_min, 401)) if self._procgen_clock_min < 400 else None
             practice = False
         if stage is None:
             idx = (self._rng.choice(len(self.stages), p=self._stage_weights) if self._stage_weights is not None
@@ -398,6 +405,10 @@ class TileMarioEnv:
         self.practice = practice
         if self._patcher is not None:
             self._patcher.update(self.ram)
+            if self._clock is not None:  # clock digits (hundreds, tens, ones); verified with probe_enemy_speed
+                for addr, digit in zip((0x07F8, 0x07F9, 0x07FA), (self._clock // 100, self._clock // 10 % 10,
+                                                                   self._clock % 10)):
+                    self.ram[addr] = digit
 
         grid = read_tile_grid(self.ram)
         self._grids = [grid] * self._stack
@@ -416,6 +427,8 @@ class TileMarioEnv:
                     "point_events": 0, "points": 0, "hurts": 0, "death_cause": "", "mode": self.mode,
                     "practice": practice, "procgen": self._patcher is not None,
                     "difficulty": round(self._patcher.gen.d, 3) if self._patcher else "",
+                    "enemy_speed": round(self._patcher.enemy_speed, 2) if self._patcher else "",
+                    "clock": self._clock if self._patcher else "",
                     **{f"r_{k}": 0.0 for k in REWARD_COMPONENTS}}
         return self._obs(), {"stage": self.stage, "mode": self.mode, "practice": practice,
                              "procgen": self._patcher is not None}

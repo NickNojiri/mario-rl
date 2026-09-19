@@ -114,7 +114,9 @@ class PPOConfig:
     plr_rank_beta: float = 0.3
     # Procedurally generated terrain on overworld base stages (env/procgen.py); difficulty ~ U(0, max) per episode.
     procgen_prob: float = 0.0
-    procgen_difficulty: float = 1.0
+    procgen_difficulty: float = 1.0  # up to 1.5 = hard mode (6-tile pits, 4-tile steps)
+    procgen_enemy_speed: float = 1.0  # max walker speed factor on generated levels, ~U(1, max) per level
+    procgen_clock_min: int = 400  # generated levels start their clock in [min, 400]
 
     # --- learning ---
     n_envs: int = 12
@@ -147,7 +149,8 @@ class PPOConfig:
                     death_reward=self.death_reward, hurt_reward=self.hurt_reward,
                     points_per_100=self.points_per_100, points_cap=self.points_cap,
                     mode_safe_prob=self.mode_safe_prob, practice_prob=self.practice_prob,
-                    procgen_prob=self.procgen_prob, procgen_difficulty=self.procgen_difficulty)
+                    procgen_prob=self.procgen_prob, procgen_difficulty=self.procgen_difficulty,
+                    procgen_enemy_speed=self.procgen_enemy_speed, procgen_clock_min=self.procgen_clock_min)
 
     def resolved_stages(self) -> tuple[list, list]:
         from env.tiles import TEST_STAGES, TRAIN_STAGES
@@ -174,7 +177,7 @@ PPO_BOOKKEEPING_FIELDS = frozenset(
 V3_FIELD_DEFAULTS = {"obs_version": 2, "reward_version": 2, "death_reward": -150.0, "hurt_reward": -50.0,
                      "points_per_100": 5.0, "points_cap": 150.0, "mode_safe_prob": 0.5, "practice_prob": 0.0,
                      "plr": False, "plr_uniform_mix": 0.5, "plr_rank_beta": 0.3, "procgen_prob": 0.0,
-                     "procgen_difficulty": 1.0}
+                     "procgen_difficulty": 1.0, "procgen_enemy_speed": 1.0, "procgen_clock_min": 400}
 
 PPO_PRESETS = {
     # Every code path in about a minute: vec env, truncation bootstrap, updates, checkpoint, snapshot.
@@ -196,6 +199,11 @@ PPO_PRESETS = {
     # Same length as v3b_1h so held-out distance compares directly.
     "ppo_1h_gen": PPOConfig(reward_version=3, plr=True, procgen_prob=0.75, total_steps=1_716_000,
                             snapshot_every=468_000, save_every=100_000),
+    # Generator v2: harder (difficulty up to 1.5), faster (walkers up to 2x, clock 200-400), pipes and tile
+    # themes; guardrails from gen_1h: only 40% generated, higher entropy bonus against the collapse it showed.
+    "ppo_gen2": PPOConfig(reward_version=3, plr=True, procgen_prob=0.4, procgen_difficulty=1.5,
+                          procgen_enemy_speed=2.0, procgen_clock_min=200, ent_coef=0.02,
+                          total_steps=7_765_248, snapshot_every=1_500_000, save_every=100_000),
     # Sweep base: the v3b reward (best held-out so far), short enough to rank many variants (~15 min each).
     "ppo_sweep": PPOConfig(reward_version=3, total_steps=480_000, save_every=240_000, snapshot_every=10 ** 9),
     # v4: macros + physics hints + safe/insane modes + practice before deaths + prioritized stages

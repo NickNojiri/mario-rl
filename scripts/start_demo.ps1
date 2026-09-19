@@ -7,9 +7,10 @@ param(
     [string]$Stages = "test",
     [string]$Checkpoint = "runs/ppo_1h_a/latest_1h_frozen.pt",
     [int]$Port = 8765,
-    [switch]$FollowQueue
+    [switch]$FollowQueue,
+    [switch]$Follow  # reload -Checkpoint whenever training saves it (watch a run while it trains)
 )
-$source = if ($FollowQueue) { "--follow-queue" } else { "--checkpoint $Checkpoint" }
+$source = if ($FollowQueue) { "--follow-queue" } elseif ($Follow) { "--checkpoint $Checkpoint --follow" } else { "--checkpoint $Checkpoint" }
 Start-Process wsl.exe -WindowStyle Hidden -ArgumentList (
     "-d Ubuntu --cd /mnt/c/Users/17143/mario-rl -- bash scripts/wsl_run.sh python -u -W ignore -m scripts.demo " +
     "$source --stages $Stages --port $Port"

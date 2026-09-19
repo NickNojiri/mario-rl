@@ -39,6 +39,43 @@ def test_generator_respects_jump_limits():
             assert all(t <= FLOOR_ROW for t in tops)
 
 
+def test_hard_mode_limits_pipes_and_themes():
+    from env.procgen import PIPE_TOP_L, PIPE_TOP_R, SOLID_THEMES
+
+    seen_pipe, themes = False, set()
+    for seed in range(60):
+        g = LevelGenerator(seed, 1.5)
+        cols = [g.get(i) for i in range(500)]
+        themes.add(g.solid)
+        assert max(g.pits) <= 6, "hard mode pits stay within the 9.8-tile running jump"
+        for i, c in enumerate(cols):  # pits of 5-6 tiles always get 4 columns of run-up ground
+            if i >= 4 and ground_top(c) == 13 and not any(c) and ground_top(cols[i - 1]) != 13:
+                w = 0
+                while i + w < len(cols) and not any(cols[i + w]):
+                    w += 1
+                if w >= 5:
+                    assert all(ground_top(cols[i - k]) != 13 for k in range(1, 5))
+        solid = {t for c in cols for t in c} - {0}
+        assert g.solid in solid and g.solid in SOLID_THEMES
+        if any(c[r] == PIPE_TOP_L for c in cols for r in range(ROWS)):
+            seen_pipe = True
+            left = next(i for i, c in enumerate(cols) if PIPE_TOP_L in c)
+            assert PIPE_TOP_R in cols[left + 1], "pipes are 2 wide with matching top tiles"
+    assert seen_pipe and themes == set(SOLID_THEMES)
+
+
+def test_faster_enemies_and_shorter_clock_on_generated_levels():
+    env = TileMarioEnv(stages=["1-1"], noop_max=0, procgen_prob=1.0, procgen_enemy_speed=2.0, procgen_clock_min=200)
+    for s in range(6):
+        _, info = env.reset(seed=s)
+        ep = env._ep
+        assert 200 <= env._smb._time <= 400 and ep["clock"] == env._smb._time
+        assert 1.0 <= ep["enemy_speed"] <= 2.0
+    _, info = env.reset(seed=0, stage="1-1")  # real stage: untouched
+    assert env._smb._time == 400 and env._ep["clock"] == ""
+    env.close()
+
+
 def test_patcher_only_writes_rendered_offscreen_columns_and_handles_flag():
     ram = np.zeros(0x800, np.uint8)
     ram[0x071A], ram[0x071C] = 0, 0  # screen at level x 0 -> columns 0-15 visible
