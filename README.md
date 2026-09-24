@@ -1,6 +1,76 @@
 # mario-rl
 
-Double-DQN on Super Mario Bros 1-1, CPU-only. Runs in WSL Ubuntu, because nes-py has to be compiled and gcc is already there.
+Reinforcement learning on Super Mario Bros, CPU-only, with the question fixed in advance: **does it learn the
+game's mechanics, or memorize levels?** Every headline number is measured on real levels the agent never trains
+on. Runs in WSL Ubuntu, because nes-py has to be compiled and gcc is already there.
+
+**[Changelog](#changelog)** · **[Known gaps](#known-gaps)** · [Full write-up](docs/mario_rl_science.pdf)
+
+## Changelog
+
+Newest first. The primary metric is **held-out mean x_pos**: 5 real stages the agent never trains on
+(`2-1, 3-3, 4-2, 5-4, 7-1`), 10 episodes each, seeds 50000+, randomized start delay, actions sampled from the
+policy unless marked greedy. The random-policy baseline under the same protocol is **382**.
+
+| Run | Steps | Held-out x | Train x | Train flags | Held-out flags |
+|---|---|---|---|---|---|
+| `gen2` (15M) | 15.0M | **671** sampled / **1020** greedy | 1365 | 12.7% | **0.0%** |
+| `gen2` (7.8M) | 7.8M | 517 | 1135 | 12.3% | 0.0% |
+| `v3b_1h` | 7.8M | **674** | 1440 | 11.8% | 0.0% |
+| `gen_1h` | 7.8M | 446 | 757 | 5.0% | 0.0% |
+| `ppo_1h_a` (v2) | 1.7M | 582 | 774 | 1 / 220 eps | 0 / 50 eps |
+| random baseline | — | 382 | 443 | 0.0% | 0.0% |
+
+### gen2 — generator v2, 15M steps
+Procedurally generated terrain patched into the real game's collision buffer: harder layouts (up to 6-tile pits),
+walkers up to 2x speed, shorter clock, real pipes and tile themes. 40% of episodes generated, prioritized level
+replay on, `ent_coef` raised to 0.02 against the entropy collapse `gen_1h` showed.
+
+Ends level with the best real-levels-only run (671 vs 674, z = -0.1) but **took roughly twice the steps to get
+there** — at an equal 7.8M budget it was clearly behind (517 vs 674, z = -3.4). Procedural generation has not yet
+paid for itself. Held-out castle 5-4 went from 320 to 1123 with the extra steps, so the earlier "castles need a
+castle generator" reading was undertraining, not a missing feature.
+
+### gen_1h — first procedural run (negative result)
+75% of episodes on generated terrain. Held-out 446 against 674 for the equivalent real-levels run, with entropy
+collapse. Diagnosed as distribution shift from over-weighting generated levels; the guardrails in `gen2` (40%
+share, higher entropy bonus) recovered most of it.
+
+### v3 — reward redesign, enemy motion, macro actions
+- **reward_version 3:** progress pays only for new ground, with explicit death / hurt / points / coin / flag terms
+  instead of the game's clipped reward. This was the single largest gain in the project, and it came from reward
+  design rather than tuning.
+- **obs_version 3:** per-enemy position and velocity features. Enemy *motion* is invisible in a stack of tile
+  frames, so it had to be supplied explicitly.
+- **Macro actions (options):** a full-distance jump needs A held 6-8 agent steps, which per-step resampling makes
+  improbable. Macros hold the button for a fixed length and are credited with a semi-MDP `gamma^d` discount.
+- **18-variant sweep** at 480k steps each: only prioritized level replay separated from noise. Tuning did not
+  move the primary metric.
+
+### v2 — PPO on tile grids across real stages
+Observation switched from pixels to a 13x16 grid of the game's own tile ids read from RAM, plus the previous
+action, speed and air/ground state. 22 training stages, 5 held out. See the [v2 results](#v2-results-a-1-hour-run-not-a-finished-agent) below.
+
+### v1 — Double DQN on 1-1
+See [Results: run 1](#results-run-1-dqn_1_1-3m-steps-97-h-on-a-ryzen-7-7800x3d) below.
+
+## Known gaps
+
+Things that are wrong or unmeasured, listed so they are not mistaken for settled:
+
+- **One seed.** Every result in this repo is a single training seed. The reported error bars are episode-level
+  variance *within* one seed, which understates true variance. Conclusions that rest on a few standard errors
+  may not survive three seeds.
+- **The held-out set has been used for model selection.** Checkpoints and settings were chosen after looking at
+  held-out scores, so those 5 stages are really a validation set and 671/674 are optimistically biased. There is
+  no spare real level: 32 total = 22 train + 5 held out + 5 excluded (water physics, looping mazes).
+- **No scripted baseline.** The only floor is a uniform random policy. A scripted "run right and jump on a cycle"
+  baseline is not implemented, so it is not known how much of the score the level layout gives away for free.
+- **x_pos is not normalized by level length**, so averaging across stages of different lengths silently weights
+  the long ones.
+- **Sampled vs greedy was not reported until late.** Every historical number above is the sampled policy. On
+  `gen2` at 15M, greedy scores 1020 against 671 sampled.
+- **No held-out level has ever been completed**, in any run, at any checkpoint.
 
 ## Setup (once, inside WSL)
 
