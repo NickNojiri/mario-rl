@@ -57,13 +57,17 @@ def _eval_stage(job: dict) -> dict:
         ep = info["episode"]
         ep["trajectory"] = hashlib.sha1(np.asarray(actions, np.int8).tobytes()).hexdigest()
         ep["seed"] = seed
+        ep["progress_fraction"] = progress_fraction(ep["x_pos"], job.get("flag_x"))
         eps.append(ep)
     env.close()
     steps = sum(e["length"] for e in eps) or 1
     causes = [e["death_cause"] for e in eps]
+    fractions = [e["progress_fraction"] for e in eps if e["progress_fraction"] is not None]
     return {
         "stage": job["stage"], "group": job["group"], "episodes": len(eps),
         "mean_x_pos": float(np.mean([e["x_pos"] for e in eps])),
+        "flag_x": job.get("flag_x"),
+        "mean_progress_fraction": float(np.mean(fractions)) if fractions else None,
         "std_x_pos": float(np.std([e["x_pos"] for e in eps])),
         "flag_rate": float(np.mean([e["flag_get"] for e in eps])),
         "mean_coins": float(np.mean([e["coins"] for e in eps])),
@@ -78,21 +82,49 @@ def _eval_stage(job: dict) -> dict:
         "hurts_per_episode": float(np.mean([e["hurts"] for e in eps])),
         "death_causes": {c: causes.count(c) for c in sorted(set(causes))},
         # per-episode records, so any single episode can be replayed exactly (scripts/record_gif_ppo.py)
-        "episodes_detail": [{k: e[k] for k in ("seed", "x_pos", "max_x", "flag_get", "death_cause", "coins",
-                                                "points", "hurts", "jumps", "left_presses", "noop_presses",
-                                                "length", "terminated", "truncated", "game_reward")} for e in eps],
+        "episodes_detail": [{k: e[k] for k in ("seed", "x_pos", "progress_fraction", "max_x", "flag_get",
+                                                "death_cause", "coins", "points", "hurts", "jumps",
+                                                "left_presses", "noop_presses", "length", "terminated",
+                                                "truncated", "game_reward")} for e in eps],
     }
 
 
 SUMMARY_KEYS = ("mean_x_pos", "flag_rate", "mean_coins", "stall_rate", "mean_game_reward", "pit_death_rate",
                 "enemy_death_rate", "left_share", "noop_share", "points_per_episode", "hurts_per_episode")
 
+STAGES_JSON = Path(__file__).resolve().parent / "stages.json"
+
+
+def load_stage_lengths(path: Path | str = STAGES_JSON) -> dict[str, int | None]:
+    """{stage: flagpole x_pos, or None where it has never been measured}.
+
+    Written by scripts/measure_stage_lengths.py from real flag episodes. Missing entries stay missing: a
+    guessed level length would quietly corrupt every progress figure derived from it.
+    """
+    try:
+        data = json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return {stage: e.get("flag_x") for stage, e in data.get("stages", {}).items()}
+
+
+def progress_fraction(x_pos: float, flag_x: int | None) -> float | None:
+    """How far through the level Mario got, 1.0 at the flagpole. None when the stage length is unmeasured."""
+    if not flag_x:
+        return None
+    return float(x_pos) / float(flag_x)
+
 
 def summarize(rows: list[dict], group: str) -> dict:
     g = [r for r in rows if r["group"] == group]
     if not g:
         return {}
-    return {k: float(np.mean([r[k] for r in g])) for k in SUMMARY_KEYS} | {"stages": len(g)}
+    out = {k: float(np.mean([r[k] for r in g])) for k in SUMMARY_KEYS}
+    # Averaged over measured stages only, so it is not comparable across groups with different coverage.
+    known = [r["mean_progress_fraction"] for r in g if r.get("mean_progress_fraction") is not None]
+    out["mean_progress_fraction"] = float(np.mean(known)) if known else None
+    out["stages_with_known_length"] = len(known)
+    return out | {"stages": len(g)}
 
 
 def main():
@@ -133,9 +165,10 @@ def main():
     else:
         chosen = [(s, "test" if s in test else "train" if s in train else "other") for s in args.stages.split(",")]
 
+    lengths = load_stage_lengths()
     jobs = [{"stage": s, "group": g, "config": cfg.to_dict(), "episodes": args.episodes, "seed": args.seed,
              "greedy": args.greedy, "checkpoint": str(args.checkpoint) if args.checkpoint else None,
-             "mode": args.mode}
+             "mode": args.mode, "flag_x": lengths.get(s)}
             for s, g in chosen]
     with mp.get_context("forkserver").Pool(min(args.workers, len(jobs))) as pool:
         rows = pool.map(_eval_stage, jobs)
@@ -148,7 +181,8 @@ def main():
         "stages": rows,
     }
     for r in rows:
-        print(f"{r['group']:>5} {r['stage']}: x={r['mean_x_pos']:7.1f} flag={r['flag_rate']:.2f} "
+        frac = f"{r['mean_progress_fraction'] * 100:5.1f}%" if r["mean_progress_fraction"] is not None else "    ?"
+        print(f"{r['group']:>5} {r['stage']}: x={r['mean_x_pos']:7.1f} of={frac} flag={r['flag_rate']:.2f} "
               f"coins={r['mean_coins']:.1f} stall={r['stall_rate']:.2f} unique={r['unique_trajectories']}")
     print("train:", result["train_summary"])
     print("test: ", result["test_summary"])
