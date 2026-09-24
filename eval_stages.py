@@ -2,11 +2,17 @@
 
     python eval_stages.py runs/ppo_tiles_1/latest.pt                 # train + held-out stages
     python eval_stages.py --random --config runs/ppo_tiles_1/config.json   # random baseline, same protocol
+    python eval_stages.py --scripted 14,8 --stages test             # scripted right+jump baseline
     python eval_stages.py runs/ppo_tiles_1/latest.pt --greedy --episodes 20
 
 Reports per-stage and per-group (train vs held-out) progress, flag rate, coins and stall rate. The number
-that answers "did it learn the mechanics?" is held-out performance against the random baseline, together
-with the gap between train and held-out stages.
+that answers "did it learn the mechanics?" is held-out performance against the baselines, together with the
+gap between train and held-out stages.
+
+Two baselines, because a uniform random policy is a weak floor: --random, and --scripted, which runs right and
+presses jump on a fixed cycle without ever reading the observation. Whatever the scripted policy scores is what
+the level layout gives away for free. Its cycle is chosen on training stages only (scripts/ never tunes a
+baseline on the held-out set).
 """
 from __future__ import annotations
 
@@ -37,6 +43,13 @@ def _eval_stage(job: dict) -> dict:
         agent.net.load_state_dict(torch.load(job["checkpoint"], map_location="cpu", weights_only=False)["model"])
         agent.net.eval()
 
+    # Scripted baseline: run right, holding the jump button for `hold` of every `period` steps. Open loop -- it
+    # never reads the observation -- so whatever it scores is what the level layout gives away for free, and a
+    # learned policy has to beat that to have learned anything.
+    run_a = jump_a = None
+    if job.get("scripted"):
+        run_a, jump_a = scripted_actions(env.policy_action_names)
+
     eps = []
     for i in range(job["episodes"]):
         seed = job["seed"] + i
@@ -45,7 +58,10 @@ def _eval_stage(job: dict) -> dict:
         obs, _ = env.reset(seed=seed, stage=job["stage"], mode=job.get("mode"), practice=False)
         actions = []
         while True:
-            if agent is None:
+            if job.get("scripted"):
+                period, hold = job["scripted"]
+                a = jump_a if (len(actions) % period) < hold else run_a
+            elif agent is None:
                 a = int(rng.integers(env.n_policy_actions))
             else:
                 batched = {k: v[None] for k, v in obs.items()}
@@ -88,6 +104,29 @@ SUMMARY_KEYS = ("mean_x_pos", "flag_rate", "mean_coins", "stall_rate", "mean_gam
                 "enemy_death_rate", "left_share", "noop_share", "points_per_episode", "hurts_per_episode")
 
 
+def scripted_actions(names: list[str]) -> tuple[int, int]:
+    """(run action, running-jump action) for the scripted baseline, by button name so any action set works."""
+    def find(*wanted: set) -> int:
+        for want in wanted:
+            for i, name in enumerate(names):
+                if set(name.split()) == want:
+                    return i
+        raise ValueError(f"no action matching {wanted} in {names}")
+
+    return find({"RIGHT", "B"}, {"RIGHT"}), find({"RIGHT", "A", "B"}, {"RIGHT", "A"})
+
+
+def parse_scripted(text: str) -> tuple[int, int]:
+    """'12,7' -> hold the jump button for 7 of every 12 agent steps."""
+    try:
+        period, hold = (int(x) for x in text.split(","))
+    except ValueError:
+        raise SystemExit(f"--scripted wants PERIOD,HOLD (e.g. 12,7), got {text!r}")
+    if not 1 <= hold <= period:
+        raise SystemExit(f"--scripted needs 1 <= HOLD <= PERIOD, got period={period} hold={hold}")
+    return period, hold
+
+
 def summarize(rows: list[dict], group: str) -> dict:
     g = [r for r in rows if r["group"] == group]
     if not g:
@@ -99,6 +138,8 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("checkpoint", nargs="?", type=Path)
     p.add_argument("--random", action="store_true", help="uniform random policy baseline")
+    p.add_argument("--scripted", metavar="PERIOD,HOLD",
+                   help="scripted baseline: run right, holding jump for HOLD of every PERIOD steps (e.g. 12,7)")
     p.add_argument("--config", type=Path, help="config.json for --random (defaults to ppo_full)")
     p.add_argument("--stages", default="all", help="all | train | test | comma list like 1-1,2-1")
     p.add_argument("--episodes", type=int, default=10)
@@ -110,8 +151,9 @@ def main():
                    help="play style for mode-conditioned (reward_version 4) checkpoints; ignored by older ones")
     p.add_argument("--out", type=Path)
     args = p.parse_args()
-    if args.random == bool(args.checkpoint):
-        p.error("give a checkpoint or --random (not both)")
+    if sum([bool(args.checkpoint), args.random, bool(args.scripted)]) != 1:
+        p.error("give exactly one of: a checkpoint, --random, or --scripted")
+    scripted = parse_scripted(args.scripted) if args.scripted else None
 
     import torch
 
@@ -135,13 +177,14 @@ def main():
 
     jobs = [{"stage": s, "group": g, "config": cfg.to_dict(), "episodes": args.episodes, "seed": args.seed,
              "greedy": args.greedy, "checkpoint": str(args.checkpoint) if args.checkpoint else None,
-             "mode": args.mode}
+             "mode": args.mode, "scripted": scripted}
             for s, g in chosen]
     with mp.get_context("forkserver").Pool(min(args.workers, len(jobs))) as pool:
         rows = pool.map(_eval_stage, jobs)
 
     result = {
-        "policy": "random" if args.random else str(args.checkpoint),
+        "policy": f"scripted:{args.scripted}" if scripted else "random" if args.random else str(args.checkpoint),
+        "scripted": scripted,
         "greedy": args.greedy, "episodes_per_stage": args.episodes, "base_seed": args.seed,
         "noop_max": args.noop_max, "mode": args.mode if cfg.reward_version >= 4 else None,
         "train_summary": summarize(rows, "train"), "test_summary": summarize(rows, "test"),
@@ -152,8 +195,9 @@ def main():
               f"coins={r['mean_coins']:.1f} stall={r['stall_rate']:.2f} unique={r['unique_trajectories']}")
     print("train:", result["train_summary"])
     print("test: ", result["test_summary"])
+    who = f"scripted_{args.scripted.replace(',', '_')}" if scripted else "random" if args.random else "policy"
     out = args.out or ((args.checkpoint.parent if args.checkpoint else Path("runs")) /
-                       f"eval_stages_{'random' if args.random else 'policy'}{'_greedy' if args.greedy else ''}.json")
+                       f"eval_stages_{who}{'_greedy' if args.greedy else ''}.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=2))
 
