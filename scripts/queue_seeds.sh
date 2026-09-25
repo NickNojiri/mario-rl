@@ -10,7 +10,7 @@
 # Sequential on purpose: 12 envs already oversubscribe 8 physical cores. Do not start this while another
 # training queue is running.
 set -u
-cd /mnt/c/Users/17143/mario-rl
+cd "$(dirname "$0")/.."  # repo root, so this works from a git worktree too
 mkdir -p runs docs/results/seeds
 
 for seed in 1 2 3; do
