@@ -60,10 +60,11 @@ See [Results: run 1](#results-run-1-dqn_1_1-3m-steps-97-h-on-a-ryzen-7-7800x3d) 
 Things that are wrong or unmeasured, listed so they are not mistaken for settled:
 
 - **One seed, and now we know what that costs.** Every result in the changelog is a single training seed, with
-  error bars from episode-level variance *within* that seed (±46). The previous-action ablation measured the
-  seed-level spread for the first time: **85.7**, nearly double. Single-seed differences smaller than about
-  170 (two seed-level SDs) cannot be called effects, which covers most comparisons in this README. See
-  [the P2 result](#the-number-this-project-could-not-previously-quote).
+  error bars from episode-level variance *within* that seed (±46). Nine runs across three configurations now
+  put the seed-level SD at about **57** (pooled, df 6), so the standard error on a difference between two
+  single-seed runs is about **80**. Differences smaller than that are not effects, which covers several
+  comparisons in the changelog. Same-weights comparisons (greedy vs sampled, start delay) are unaffected.
+  See [how much the seed matters](#how-much-does-the-seed-matter-revising-the-previous-estimate).
 - **The held-out set has been used for model selection.** Checkpoints and settings were chosen after looking at
   held-out scores, so those 5 stages are really a validation set and 671/674 are optimistically biased. There is
   no spare real level: 32 total = 22 train + 5 held out + 5 excluded (water physics, looping mazes).
@@ -93,6 +94,8 @@ reported rather than quietly substituted.
 > figures in the changelog cannot be distinguished from seed noise.
 >
 > **Reported either way**, including the spread — which is the number this project currently cannot quote.
+>
+> **Outcome: held, 3 of 3.** See [below](#p1-result-multi-seed-replication).
 
 ### P2 — previous-action ablation (running)
 
@@ -113,6 +116,55 @@ reported rather than quietly substituted.
 > **Outcome: no measurable effect.** See [below](#p2-result-the-previous-action-ablation). The direction
 > matched, the magnitude did not survive contact with seed noise, and the falsification threshold written
 > above turned out to be too lenient — that is recorded rather than quietly reinterpreted.
+
+## P1 result: multi-seed replication
+
+Preset `ppo_1h`, seeds 1, 2 and 3, standard evaluation. Raw JSON in [docs/results/seeds](docs/results/seeds).
+
+| seed | held-out x | train x | held-out flags | stall |
+|---|---|---|---|---|
+| 1 | 586.1 | 922.4 | 0.000 | 0.000 |
+| 2 | 608.4 | 970.8 | 0.000 | 0.040 |
+| 3 | 523.3 | 936.0 | 0.000 | 0.000 |
+| **mean** | **572.6** (sd 44.1) | **943.1** (sd 25.0) | 0.000 | |
+
+**P1 held: 3 of 3 seeds beat the random baseline of 382**, and all three also beat the scripted baseline of
+412. The held-out advantage over both floors replicates across seeds. Against the scripted baseline the
+across-seed margin is 161 with a standard error of 25, so this one is not close.
+
+The historical single-seed `ppo_1h_a` figures (582 held-out, 774 train) agree with these seeds on held-out but
+not on train. That run predates several environment and throughput fixes, so it is not a clean fourth sample
+and is not pooled here.
+
+Still zero held-out flags, in all three seeds.
+
+### How much does the seed matter? (revising the previous estimate)
+
+The previous-action ablation gave a seed-level SD of 85.7 and this README concluded that single-seed
+differences below about 170 could not be called effects. **That was an overreach from one arm of one
+experiment.** There are now three independent estimates, each from 3 seeds:
+
+| configuration | seed-level SD |
+|---|---|
+| `ppo_ablate_2m`, previous action visible | 85.7 |
+| `ppo_ablate_2m`, previous action hidden | 19.3 |
+| `ppo_1h`, seeds 1–3 | 44.1 |
+
+Pooling them gives **SD ≈ 57 with 6 degrees of freedom** — a far better estimate than any single one, and the
+number to use. An SD from only 3 samples is very imprecise, which is exactly why the 85.7 should not have been
+quoted alone.
+
+Comparing two *single-seed* runs, the standard error of the difference is about **80**. Applied to the
+changelog:
+
+| comparison | difference | vs SE 80 | reading |
+|---|---|---|---|
+| PLR's training gain | +44 | 0.6 | not an effect |
+| `gen2` vs `v3b` held-out at 7.8M | −158 | 2.0 | borderline, not the z = −3.4 previously claimed |
+| `gen2` 671 vs `v3b` 674 at 15M | −3 | 0.04 | never precise enough to be a "tie" |
+
+Two comparisons are **unaffected**, because they reuse the same weights and so carry no seed variance at all —
+only episode noise: greedy vs sampled (+349) and the start-delay mismatch (+121). Those stand.
 
 ## P2 result: the previous-action ablation
 
@@ -148,17 +200,10 @@ Neither arm reached a flag on any held-out level, in any seed.
 **Seed-level spread is 85.7** on the visible arm — nearly double the ±46 episode-level standard error every
 prior comparison in this README was judged against.
 
-That is a problem for earlier conclusions, not just for this one. If the spread is similar at longer budgets
-(this was measured at 2M steps, so applying it to the 7.8M and 15M runs is an extrapolation), then:
-
-- prioritized level replay's **+44** training gain, previously described as the sweep's one real effect, sits
-  well inside one seed's spread
-- the **−158** held-out gap between `gen2` and `v3b` at 7.8M, quoted at z = −3.4 on episode-level noise, is
-  about 1.3 seed-level standard deviations
-- the **671 vs 674** "tie" at 15M was never precise enough to be a tie or anything else
-
-Those entries stay in the changelog as measured, but they should be read as one-seed observations, not as
-established effects. The multi-seed replication (P1) is the direct test.
+*Revised after P1:* this single estimate was too high and was quoted too confidently. Pooling all nine runs
+gives SD ≈ 57; see [how much the seed matters](#how-much-does-the-seed-matter-revising-the-previous-estimate)
+for the corrected analysis and what it does to the changelog. The direction of the conclusion is unchanged —
+several single-seed comparisons are not effects — but the threshold is about 80, not 170.
 
 ## Setup (once, inside WSL)
 
