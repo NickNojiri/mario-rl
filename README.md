@@ -72,6 +72,38 @@ Things that are wrong or unmeasured, listed so they are not mistaken for settled
   `gen2` at 15M, greedy scores 1020 against 671 sampled.
 - **No held-out level has ever been completed**, in any run, at any checkpoint.
 
+## The start-delay mismatch
+
+Training uses a random start delay of 0–8 idle steps; evaluation uses 0–30. The gap is deliberate — every reset
+idles one emulator while the other 11 wait, so a long delay at training time costs about 35% of rollout
+throughput (628 vs 990 steps/s measured). Evaluation has no such constraint and wants more start variety.
+
+The same checkpoint (`gen2`, 15M), 10 episodes per held-out stage, evaluated both ways:
+
+| held-out stage | 0–8 starts | 0–30 starts | difference |
+|---|---|---|---|
+| 2-1 | 818.7 | 801.8 | −17 |
+| 3-3 | 498.9 | 498.9 | 0 |
+| 4-2 | 312.0 | 320.4 | +8 |
+| 5-4 | 1152.3 | 1122.7 | −30 |
+| **7-1** | **1178.7** | **608.9** | **−570** |
+| **mean** | **792.1** | **670.5** | **−121** |
+
+**Which is the fair number: 0–30.** Both baselines (random 382, scripted 412) were measured under it, and a
+policy that only works from a narrow band of start phases has not generalized — so the harder protocol is the
+honest one, and every headline figure in this README uses it.
+
+But the 121-point gap is itself a result, not just a protocol detail. Almost all of it is one stage: 7-1 nearly
+doubles when the start distribution matches training. Both columns are 10 distinct trajectories, so this is not
+a sampling artifact. Sensitivity to *when* the episode starts is what memorized timing looks like, as opposed
+to reacting to what is on screen — which is the same conclusion the train/held-out gap points at.
+
+Raw data: [docs/results/noop_mismatch](docs/results/noop_mismatch).
+
+```bash
+python eval_stages.py runs/gen2/latest.pt --stages test --episodes 10 --noop-max 8
+```
+
 ## Setup (once, inside WSL)
 
 ```bash
