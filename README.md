@@ -59,9 +59,11 @@ See [Results: run 1](#results-run-1-dqn_1_1-3m-steps-97-h-on-a-ryzen-7-7800x3d) 
 
 Things that are wrong or unmeasured, listed so they are not mistaken for settled:
 
-- **One seed.** Every result in this repo is a single training seed. The reported error bars are episode-level
-  variance *within* one seed, which understates true variance. Conclusions that rest on a few standard errors
-  may not survive three seeds.
+- **One seed, and now we know what that costs.** Every result in the changelog is a single training seed, with
+  error bars from episode-level variance *within* that seed (±46). The previous-action ablation measured the
+  seed-level spread for the first time: **85.7**, nearly double. Single-seed differences smaller than about
+  170 (two seed-level SDs) cannot be called effects, which covers most comparisons in this README. See
+  [the P2 result](#the-number-this-project-could-not-previously-quote).
 - **The held-out set has been used for model selection.** Checkpoints and settings were chosen after looking at
   held-out scores, so those 5 stages are really a validation set and 671/674 are optimistically biased. There is
   no spare real level: 32 total = 22 train + 5 held out + 5 excluded (water physics, looping mazes).
@@ -107,6 +109,56 @@ reported rather than quietly substituted.
 >
 > **Prior: weak.** An 18-variant sweep previously moved the primary metric exactly once, so "no measurable
 > difference" is a live outcome here and would be reported as the result.
+>
+> **Outcome: no measurable effect.** See [below](#p2-result-the-previous-action-ablation). The direction
+> matched, the magnitude did not survive contact with seed noise, and the falsification threshold written
+> above turned out to be too lenient — that is recorded rather than quietly reinterpreted.
+
+## P2 result: the previous-action ablation
+
+Six runs, `ppo_ablate_2m`, 2M steps each, identical settings, three seeds per arm. Held-out mean x_pos under
+the standard protocol. Raw eval JSON in [docs/results/prev_action_ablation](docs/results/prev_action_ablation).
+
+| arm | s0 | s1 | s2 | mean | sd |
+|---|---|---|---|---|---|
+| previous action **visible** | 585.6 | 754.6 | 645.6 | **661.9** | 85.7 |
+| previous action **hidden** | 586.5 | 592.5 | 622.6 | **600.5** | 19.3 |
+
+Difference **+61.4** in favour of visible, SE of the difference **50.7**, **t = 1.21**. That is not
+distinguishable from zero.
+
+**The honest call is "no measurable effect."** The pre-registered falsification rule said "within one standard
+error", and 61.4 is a hair outside 50.7 — so on a literal reading the prediction survives. It should not be
+scored that way: one standard error is a ~68% band, not a significance test, and t = 1.21 is roughly a 3-in-10
+result under the null. The threshold was written too leniently. Recording that is the point of writing it down
+beforehand.
+
+**Why the effect is small is the more useful finding.** Stall rate was **0.000 in five of the six runs** (0.040
+in the other). The previous action was added in v2 to fix v1's dominant failure, where half of eval episodes
+ended with A held for 100% of the last 150 steps. At 2M steps with the v3 reward and this action set, that
+failure does not occur in either arm. You cannot measure the benefit of a fix for a problem that no longer
+happens — the reward redesign and macro actions appear to have removed it independently. Re-running this
+ablation on the v2 reward, where stalls were common, would be the experiment that actually tests the original
+claim.
+
+Neither arm reached a flag on any held-out level, in any seed.
+
+### The number this project could not previously quote
+
+**Seed-level spread is 85.7** on the visible arm — nearly double the ±46 episode-level standard error every
+prior comparison in this README was judged against.
+
+That is a problem for earlier conclusions, not just for this one. If the spread is similar at longer budgets
+(this was measured at 2M steps, so applying it to the 7.8M and 15M runs is an extrapolation), then:
+
+- prioritized level replay's **+44** training gain, previously described as the sweep's one real effect, sits
+  well inside one seed's spread
+- the **−158** held-out gap between `gen2` and `v3b` at 7.8M, quoted at z = −3.4 on episode-level noise, is
+  about 1.3 seed-level standard deviations
+- the **671 vs 674** "tie" at 15M was never precise enough to be a tie or anything else
+
+Those entries stay in the changelog as measured, but they should be read as one-seed observations, not as
+established effects. The multi-seed replication (P1) is the direct test.
 
 ## Setup (once, inside WSL)
 
