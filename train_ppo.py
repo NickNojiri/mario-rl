@@ -37,7 +37,7 @@ EPISODE_FIELDS = ["step", "stage", "mode", "practice", "procgen", "difficulty", 
                   "hurts", "jumps", "left_presses", "noop_presses", "game_reward", "reward", "length", "terminated",
                   "truncated", "r_progress", "r_time", "r_death", "r_hurt", "r_points", "r_coins", "r_flag"]
 PRESETS = ["ppo_smoke", "ppo_full", "ppo_1h", "ppo_1h_v3b", "ppo_1h_v3c", "ppo_1h_v3d", "ppo_smoke_v3",
-           "ppo_1h_v4", "ppo_smoke_v4", "ppo_sweep", "ppo_1h_gen", "ppo_gen2"]
+           "ppo_1h_v4", "ppo_smoke_v4", "ppo_sweep", "ppo_1h_gen", "ppo_gen2", "ppo_ablate_2m"]
 
 
 def parse_args():

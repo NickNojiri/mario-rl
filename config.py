@@ -100,6 +100,9 @@ class PPOConfig:
     flag_reward: float = 150.0
     # v3 (see env/tiles.py). Defaults reproduce v2 so old checkpoints/configs load and hash unchanged.
     obs_version: int = 2
+    # Ablation switch (Wenlu's suggested experiment): False hides the previous action from the observation.
+    # The slot is zeroed rather than removed, so shapes and the learning hash are unaffected at the default.
+    obs_prev_action: bool = True
     reward_version: int = 2
     death_reward: float = -150.0
     hurt_reward: float = -50.0
@@ -145,7 +148,8 @@ class PPOConfig:
         return dict(stages=list(stages), actions=self.actions, skip=self.skip, stack=self.stack,
                     no_progress_steps=self.no_progress_steps, noop_max=self.noop_max,
                     coin_reward=self.coin_reward, flag_reward=self.flag_reward,
-                    obs_version=self.obs_version, reward_version=self.reward_version,
+                    obs_version=self.obs_version, obs_prev_action=self.obs_prev_action,
+                    reward_version=self.reward_version,
                     death_reward=self.death_reward, hurt_reward=self.hurt_reward,
                     points_per_100=self.points_per_100, points_cap=self.points_cap,
                     mode_safe_prob=self.mode_safe_prob, practice_prob=self.practice_prob,
@@ -174,7 +178,8 @@ class PPOConfig:
 
 PPO_BOOKKEEPING_FIELDS = frozenset(
     {"total_steps", "save_every", "snapshot_every", "device", "torch_threads", "rollout_threads"})
-V3_FIELD_DEFAULTS = {"obs_version": 2, "reward_version": 2, "death_reward": -150.0, "hurt_reward": -50.0,
+V3_FIELD_DEFAULTS = {"obs_version": 2, "obs_prev_action": True, "reward_version": 2,
+                     "death_reward": -150.0, "hurt_reward": -50.0,
                      "points_per_100": 5.0, "points_cap": 150.0, "mode_safe_prob": 0.5, "practice_prob": 0.0,
                      "plr": False, "plr_uniform_mix": 0.5, "plr_rank_beta": 0.3, "procgen_prob": 0.0,
                      "procgen_difficulty": 1.0, "procgen_enemy_speed": 1.0, "procgen_clock_min": 400}
@@ -204,6 +209,11 @@ PPO_PRESETS = {
     "ppo_gen2": PPOConfig(reward_version=3, plr=True, procgen_prob=0.4, procgen_difficulty=1.5,
                           procgen_enemy_speed=2.0, procgen_clock_min=200, ent_coef=0.02,
                           total_steps=7_765_248, snapshot_every=1_500_000, save_every=100_000),
+    # Previous-action ablation. The v3b reward (best held-out on real levels) with no procgen and no PLR, so the
+    # only thing that differs between arms is whether the previous action is visible. 2M steps is ~53 min at
+    # ~630 steps/s; run it across 3 seeds per arm (scripts/queue_prev_action.sh).
+    "ppo_ablate_2m": PPOConfig(reward_version=3, total_steps=2_000_000, save_every=500_000,
+                               snapshot_every=10 ** 9),
     # Sweep base: the v3b reward (best held-out so far), short enough to rank many variants (~15 min each).
     "ppo_sweep": PPOConfig(reward_version=3, total_steps=480_000, save_every=240_000, snapshot_every=10 ** 9),
     # v4: macros + physics hints + safe/insane modes + practice before deaths + prioritized stages
