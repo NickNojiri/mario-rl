@@ -4,7 +4,8 @@ Reinforcement learning on Super Mario Bros, CPU-only, with the question fixed in
 game's mechanics, or memorize levels?** Every headline number is measured on real levels the agent never trains
 on. Runs in WSL Ubuntu, because nes-py has to be compiled and gcc is already there.
 
-**[Changelog](#changelog)** · **[Known gaps](#known-gaps)** · [Full write-up](docs/mario_rl_science.pdf)
+**[Changelog](#changelog)** · **[Known gaps](#known-gaps)** · **[Predictions](#pre-registered-predictions)** ·
+**[Decisions (ADRs)](docs/adr/)** · [Full write-up](docs/mario_rl_science.pdf)
 
 ## Changelog
 
@@ -71,6 +72,41 @@ Things that are wrong or unmeasured, listed so they are not mistaken for settled
 - **Sampled vs greedy was not reported until late.** Every historical number above is the sampled policy. On
   `gen2` at 15M, greedy scores 1020 against 671 sampled.
 - **No held-out level has ever been completed**, in any run, at any checkpoint.
+
+## Pre-registered predictions
+
+Written down *before* the results existed, so they can fail. A prediction recorded after seeing the numbers is
+not a prediction. Each entry fixes its protocol here; if the analysis later departs from it, the departure is
+reported rather than quietly substituted.
+
+### P1 — multi-seed replication (not yet run)
+
+> **Prediction:** held-out mean x_pos beats the random baseline (382) in **at least 3 of 3** training seeds.
+>
+> **Protocol, fixed now:** preset `ppo_1h`, seeds 1, 2 and 3, nothing else changed. Evaluation is the standard
+> protocol: 10 episodes per stage, seeds 50000+, randomized start offsets, actions sampled from the policy.
+> The primary number is per-seed held-out mean x_pos.
+>
+> **Falsified if:** any seed fails to beat 382, or the across-seed spread is wide enough that the single-seed
+> figures in the changelog cannot be distinguished from seed noise.
+>
+> **Reported either way**, including the spread — which is the number this project currently cannot quote.
+
+### P2 — previous-action ablation (running)
+
+> **Prediction:** hiding the previous action **lowers** held-out mean x_pos, averaged over 3 seeds.
+>
+> **Protocol, fixed now:** preset `ppo_ablate_2m`, `obs_prev_action` true vs false, seeds 0, 1 and 2, identical
+> 2M-step budget. Reported metrics are the three asked for in review: stall rate, completion (flag) rate and
+> distance.
+>
+> **Falsified if:** the arms land within one standard error of each other, or hiding it helps.
+>
+> **Honest caveat:** the first of the six runs had finished and been evaluated when this was written. Its
+> result had not been looked at. The other five were still running.
+>
+> **Prior: weak.** An 18-variant sweep previously moved the primary metric exactly once, so "no measurable
+> difference" is a live outcome here and would be reported as the result.
 
 ## Setup (once, inside WSL)
 
