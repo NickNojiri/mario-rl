@@ -1,0 +1,274 @@
+{
+  "_about": "flagpole x_pos per stage, measured from the emulator. null = never reached, so not measured. Never fill these from published level data; run the game.",
+  "measured_at": "2026-09-23T17:23:50-0700",
+  "stages": {
+    "1-1": {
+      "flag_x": 3161,
+      "method": "x_pos at flag_get, read from game RAM in recorded eval episodes",
+      "episodes": 28,
+      "agreement": "all recorded flag episodes gave the same value",
+      "sources": [
+        "runs/gen2/eval_15M_all.json",
+        "runs/gen2/eval_7.8M_all.json",
+        "runs/gen2/eval_final_all.json",
+        "runs/gen_1h/eval_long_all.json",
+        "runs/v3b_1h/eval_final_all.json",
+        "runs/v3b_1h/eval_long_all.json",
+        "runs/v3c_1h/eval_final_all.json",
+        "runs/v3d_1h/eval_final_all.json",
+        "runs/v4_1h/eval_final_all_insane.json",
+        "runs/v4_1h/eval_final_all_safe.json"
+      ],
+      "verified_in_emulator": {
+        "checkpoint": "runs/gen2/latest.pt",
+        "seed": 50000,
+        "flag_get": true,
+        "x_pos": 3161,
+        "matches_recorded": true
+      }
+    },
+    "1-2": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "1-3": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "1-4": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "2-1": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "2-2": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "2-3": {
+      "flag_x": 3593,
+      "method": "x_pos at flag_get, read from game RAM in recorded eval episodes",
+      "episodes": 12,
+      "agreement": "all recorded flag episodes gave the same value",
+      "sources": [
+        "runs/gen2/eval_15M_all.json",
+        "runs/gen2/eval_7.8M_all.json",
+        "runs/gen2/eval_final_all.json",
+        "runs/v3b_1h/eval_long_all.json"
+      ],
+      "verified_in_emulator": {
+        "checkpoint": "runs/gen2/latest.pt",
+        "seed": 50001,
+        "flag_get": true,
+        "x_pos": 3593,
+        "matches_recorded": true
+      }
+    },
+    "2-4": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "3-1": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "3-2": {
+      "flag_x": 3337,
+      "method": "x_pos at flag_get, read from game RAM in recorded eval episodes",
+      "episodes": 29,
+      "agreement": "all recorded flag episodes gave the same value",
+      "sources": [
+        "runs/gen2/eval_15M_all.json",
+        "runs/gen2/eval_7.8M_all.json",
+        "runs/gen2/eval_final_all.json",
+        "runs/gen_1h/eval_long_all.json",
+        "runs/v3b_1h/eval_long_all.json",
+        "runs/v4_1h/eval_final_all_safe.json"
+      ],
+      "verified_in_emulator": {
+        "checkpoint": "runs/gen2/latest.pt",
+        "seed": 50001,
+        "flag_get": true,
+        "x_pos": 3337,
+        "matches_recorded": true
+      }
+    },
+    "3-3": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "3-4": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "4-1": {
+      "flag_x": 3593,
+      "method": "x_pos at flag_get, read from game RAM in recorded eval episodes",
+      "episodes": 49,
+      "agreement": "all recorded flag episodes gave the same value",
+      "sources": [
+        "runs/gen2/eval_15M_all.json",
+        "runs/gen2/eval_7.8M_all.json",
+        "runs/gen2/eval_final_all.json",
+        "runs/gen_1h/eval_long_all.json",
+        "runs/v3b_1h/eval_final_all.json",
+        "runs/v3b_1h/eval_long_all.json",
+        "runs/v3c_1h/eval_final_all.json",
+        "runs/v4_1h/eval_final_all_insane.json",
+        "runs/v4_1h/eval_final_all_safe.json"
+      ],
+      "verified_in_emulator": {
+        "checkpoint": "runs/gen2/latest.pt",
+        "seed": 50001,
+        "flag_get": true,
+        "x_pos": 3593,
+        "matches_recorded": true
+      }
+    },
+    "4-2": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "4-3": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "4-4": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "5-1": {
+      "flag_x": 3177,
+      "method": "x_pos at flag_get, read from game RAM in recorded eval episodes",
+      "episodes": 6,
+      "agreement": "all recorded flag episodes gave the same value",
+      "sources": [
+        "runs/ppo_1h_a/eval_final_all.json",
+        "runs/ppo_1h_a/eval_final_all_v3diag.json",
+        "runs/v3b_1h/eval_long_all.json"
+      ],
+      "verified_in_emulator": {
+        "checkpoint": "runs/ppo_1h_a/latest.pt",
+        "seed": 50006,
+        "flag_get": true,
+        "x_pos": 3177,
+        "matches_recorded": true
+      }
+    },
+    "5-2": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "5-3": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "5-4": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "6-1": {
+      "flag_x": 2969,
+      "method": "x_pos at flag_get, read from game RAM in recorded eval episodes",
+      "episodes": 13,
+      "agreement": "all recorded flag episodes gave the same value",
+      "sources": [
+        "runs/gen2/eval_15M_all.json",
+        "runs/gen2/eval_7.8M_all.json",
+        "runs/gen2/eval_final_all.json",
+        "runs/v3c_1h/eval_final_all.json"
+      ],
+      "verified_in_emulator": {
+        "checkpoint": "runs/gen2/latest.pt",
+        "seed": 50003,
+        "flag_get": true,
+        "x_pos": 2969,
+        "matches_recorded": true
+      }
+    },
+    "6-2": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "6-3": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "6-4": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "7-1": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "7-2": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "7-3": {
+      "flag_x": 3593,
+      "method": "x_pos at flag_get, read from game RAM in recorded eval episodes",
+      "episodes": 3,
+      "agreement": "all recorded flag episodes gave the same value",
+      "sources": [
+        "runs/gen2/eval_15M_all.json",
+        "runs/v3b_1h/eval_long_all.json"
+      ],
+      "verified_in_emulator": {
+        "checkpoint": "runs/gen2/latest.pt",
+        "seed": 50005,
+        "flag_get": true,
+        "x_pos": 3593,
+        "matches_recorded": true
+      }
+    },
+    "7-4": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "8-1": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "8-2": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "8-3": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    },
+    "8-4": {
+      "flag_x": null,
+      "method": "not measured",
+      "note": "no recorded flag episode; the agent has never finished this stage"
+    }
+  }
+}

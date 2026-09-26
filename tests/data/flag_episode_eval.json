@@ -1,0 +1,30 @@
+{
+  "_about": "One real recorded flag episode, extracted verbatim from runs/gen2/eval_15M_all.json, so the progress-fraction test does not depend on gitignored run data.",
+  "policy": "runs/gen2/latest.pt",
+  "stages": [
+    {
+      "stage": "1-1",
+      "group": "train",
+      "episodes": 1,
+      "episodes_detail": [
+        {
+          "seed": 50000,
+          "x_pos": 3161,
+          "max_x": 3161,
+          "flag_get": true,
+          "death_cause": "flag",
+          "coins": 2,
+          "points": 500,
+          "hurts": 0,
+          "jumps": 43,
+          "left_presses": 7,
+          "noop_presses": 42,
+          "length": 368,
+          "terminated": true,
+          "truncated": false,
+          "game_reward": 3041.0
+        }
+      ]
+    }
+  ]
+}
