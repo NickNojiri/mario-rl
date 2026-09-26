@@ -72,6 +72,46 @@ Things that are wrong or unmeasured, listed so they are not mistaken for settled
   `gen2` at 15M, greedy scores 1020 against 671 sampled.
 - **No held-out level has ever been completed**, in any run, at any checkpoint.
 
+## Throughput: where a rollout step actually goes
+
+![Rollout profile by parallel environment count](docs/media/bench_envs.svg)
+
+Fixed 300 timed steps per env after 30 warmup steps, `ppo_full` config, Ryzen 7 7800X3D (8 physical cores, 16
+threads). Emulator and observation-build costs are measured in-process on a single env; `ipc_contention` is a
+**residual** (`vec_step − emulator − obs_build − policy`), so it absorbs pickling, pipe traffic, scheduler
+queueing and core contention. Raw CSV: [docs/results/bench_envs.csv](docs/results/bench_envs.csv).
+
+| envs | steps/s | emulator | obs build | policy fwd | IPC + contention |
+|---|---|---|---|---|---|
+| 1 | 186 | 4.31 ms (88%) | 0.005 ms | 0.50 ms (10%) | 0.05 ms (1%) |
+| 2 | 317 | 4.32 ms (77%) | 0.006 ms | 0.68 ms (12%) | 0.63 ms (11%) |
+| 4 | 567 | 4.32 ms (70%) | 0.005 ms | 0.86 ms (14%) | 1.02 ms (16%) |
+| 8 | 765 | 4.33 ms (47%) | 0.005 ms | 1.26 ms (14%) | 3.60 ms (39%) |
+| 12 | 911 | 4.40 ms (38%) | 0.005 ms | 1.67 ms (14%) | 5.44 ms (47%) |
+| 16 | 1045 | 4.34 ms (33%) | 0.005 ms | 2.09 ms (16%) | 6.80 ms (51%) |
+
+**The bottleneck changes identity at the physical core count.** Up to 4 envs the emulator dominates at 70–88%.
+Beyond 8 — the number of physical cores — IPC and contention overtake it, reaching **51% at 16 envs**, while the
+emulator stays flat at ~4.3 ms because it is irreducible per-env serial work. The crossover falls between 8 and
+12 envs, exactly where workers start competing for cores.
+
+Three things worth naming:
+
+- **The observation build is free.** 0.005 ms against the emulator's 4.3 ms — about 0.1%, three orders of
+  magnitude apart. Decoding RAM into the tile grid costs nothing, which retires any concern that the tile
+  observation is expensive (see [ADR-0001](docs/adr/0001-tile-grid-from-ram-instead-of-pixels.md)).
+- **Scaling is sublinear from 4 envs on.** Per-env efficiency falls from 186 steps/s at 1 env to 65 at 16, about
+  35%. Doubling 8 → 16 buys 1.37x, not 2x.
+- **12 envs is not obviously the right choice.** 16 envs gives 1045 against 911 steps/s, roughly 15% more
+  rollout throughput. Whether that survives end to end is a separate question: this measures the rollout phase
+  only, and more envs also enlarge the learning batch. Training currently runs ~630 steps/s at 12 envs
+  *including* the learning phase, which is about 37% of wall time. Testing 16 envs end to end is the follow-up.
+
+```bash
+python -m scripts.bench_envs --n-envs 1,2,4,8,12,16 --steps 300   # ~4 min, needs an idle machine
+python -m scripts.bench_chart                                     # re-render the SVG
+```
+
 ## Setup (once, inside WSL)
 
 ```bash
