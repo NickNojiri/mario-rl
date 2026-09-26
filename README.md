@@ -19,7 +19,16 @@ policy unless marked greedy. The random-policy baseline under the same protocol 
 | `v3b_1h` | 7.8M | **674** | 1440 | 11.8% | 0.0% |
 | `gen_1h` | 7.8M | 446 | 757 | 5.0% | 0.0% |
 | `ppo_1h_a` (v2) | 1.7M | 582 | 774 | 1 / 220 eps | 0 / 50 eps |
+| scripted right+jump | — | 412 | 540 | 0.0% | 0.0% |
 | random baseline | — | 382 | 443 | 0.0% | 0.0% |
+
+Two baselines, because random is a weak floor. The scripted one runs right and presses jump on a fixed cycle
+without ever reading the observation, so its score is what the level layout gives away for free. Its cycle
+(jump held 8 of every 14 steps) was chosen on **training** stages only, never on the held-out set:
+
+```bash
+python eval_stages.py --scripted 14,8 --stages test --episodes 10
+```
 
 ### gen2 — generator v2, 15M steps
 Procedurally generated terrain patched into the real game's collision buffer: harder layouts (up to 6-tile pits),
@@ -64,8 +73,10 @@ Things that are wrong or unmeasured, listed so they are not mistaken for settled
 - **The held-out set has been used for model selection.** Checkpoints and settings were chosen after looking at
   held-out scores, so those 5 stages are really a validation set and 671/674 are optimistically biased. There is
   no spare real level: 32 total = 22 train + 5 held out + 5 excluded (water physics, looping mazes).
-- **No scripted baseline.** The only floor is a uniform random policy. A scripted "run right and jump on a cycle"
-  baseline is not implemented, so it is not known how much of the score the level layout gives away for free.
+- **The scripted baseline beats the agent on one held-out level.** On 7-1 the scripted policy reaches 728 while
+  the sampled agent reaches 609 (the greedy agent reaches 861). The scripted policy is also deterministic, so
+  three of the five held-out stages produced a single unique trajectory: those per-stage numbers are precise but
+  are not five independent samples.
 - **x_pos is not normalized by level length**, so averaging across stages of different lengths silently weights
   the long ones.
 - **Sampled vs greedy was not reported until late.** Every historical number above is the sampled policy. On
