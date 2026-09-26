@@ -95,6 +95,17 @@ def summarize(rows: list[dict], group: str) -> dict:
     return {k: float(np.mean([r[k] for r in g])) for k in SUMMARY_KEYS} | {"stages": len(g)}
 
 
+def eval_config(cfg_dict: dict, noop_max: int):
+    """The run's own config, adapted for evaluation.
+
+    --noop-max sets the random start delay, which has to reach the env's reset (see tests). Training-only aids
+    are switched off: no practice returns, no generated terrain (each job fixes its own stage).
+    """
+    from config import PPOConfig
+
+    return PPOConfig.from_dict({**cfg_dict, "noop_max": noop_max, "practice_prob": 0.0, "procgen_prob": 0.0})
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("checkpoint", nargs="?", type=Path)
@@ -115,7 +126,7 @@ def main():
 
     import torch
 
-    from config import PPOConfig, get_ppo_preset
+    from config import get_ppo_preset
 
     if args.checkpoint:
         cfg_dict = torch.load(args.checkpoint, map_location="cpu", weights_only=False)["config"]
@@ -123,8 +134,7 @@ def main():
         cfg_dict = {k: v for k, v in json.loads(args.config.read_text()).items()}
     else:
         cfg_dict = get_ppo_preset("ppo_full").to_dict()
-    # Evaluation never uses training-only aids: no practice returns, uniform stages (each job fixes its stage).
-    cfg = PPOConfig.from_dict({**cfg_dict, "noop_max": args.noop_max, "practice_prob": 0.0, "procgen_prob": 0.0})
+    cfg = eval_config(cfg_dict, args.noop_max)
     train, test = cfg.resolved_stages()
     if args.stages == "all":
         chosen = [(s, "train") for s in train] + [(s, "test") for s in test]
