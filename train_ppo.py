@@ -23,6 +23,7 @@ from agent.ppo import PPOAgent, compute_gae, compute_gae_options
 from agent.vec_env import SubprocVecEnv, stack_obs
 from config import PPO_BOOKKEEPING_FIELDS, PPOConfig, get_ppo_preset
 from env.tiles import ACTION_SETS, MACRO_SETS, n_extras, n_policy_actions
+from manifest import write_manifest
 
 UPDATE_FIELDS = ["update", "step", "steps_per_sec", "rollout_sec", "learn_sec", "episodes", "mean_x_pos", "flag_rate",
                  "mean_coins", "mean_game_reward", "stall_rate", "pit_death_rate", "enemy_death_rate", "left_share",
@@ -115,6 +116,14 @@ def main():
     (run_dir / "config.json").write_text(json.dumps(
         {**cfg.to_dict(), "resolved_train_stages": train_stages, "resolved_test_stages": test_stages,
          "learning_hash": cfg.learning_hash()}, indent=2))
+    manifest_path = write_manifest(
+        cfg, run_dir,
+        resumed_from_step=agent.global_step if args.resume else None,
+        extra={"preset": None if args.resume else args.preset,
+               "resume_from": str(args.resume) if args.resume else None,
+               "overrides": overrides,
+               "resolved_train_stages": train_stages, "resolved_test_stages": test_stages})
+    print(f"[manifest] {manifest_path}", flush=True)
 
     envs = SubprocVecEnv(cfg.n_envs, cfg.env_kwargs(train_stages))
     obs = envs.reset(seed=cfg.seed * 10_007 + agent.updates * cfg.n_envs)
