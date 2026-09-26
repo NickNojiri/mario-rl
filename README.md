@@ -171,6 +171,27 @@ reported rather than quietly substituted.
 > matched, the magnitude did not survive contact with seed noise, and the falsification threshold written
 > above turned out to be too lenient — that is recorded rather than quietly reinterpreted.
 
+### P3 — fail-fast hyperparameter search (running)
+
+> **Prediction:** the successive-halving winner, retrained on seeds 0, 1 and 2 at 2M steps, beats the default
+> config on the same seeds and budget (`ppo_ablate_2m`, held-out mean 661.9) with **t ≥ 2**.
+>
+> **Protocol, fixed now:** `python -m scripts.sha_search` — 27 configs (trial 0 is the default), eta 3, rungs at
+> 250k / 750k / 2.25M steps, training seed 100, selection on held-out mean x_pos with 10 / 15 / 20 eval episodes
+> per stage. Then `--confirm`: the winner retrained on seeds 0–2, which the search never used, compared against
+> the existing default runs in `docs/results/prev_action_ablation/prevact_true_s*`. Only optimizer settings
+> and PLR are searched; reward, observation, actions and training `noop_max` are fixed
+> ([ADR-0006](docs/adr/0006-successive-halving-with-seed-confirmation.md)).
+>
+> **Falsified if:** t < 2 in the confirmation. The search's own leaderboard does not count as evidence: the best
+> of 27 noisy single-seed scores is inflated by luck.
+>
+> **Threshold is t ≥ 2, not "one standard error"**, because P2 showed the looser rule was too easy to pass.
+>
+> **Prior: weak.** The 18-variant sweep moved the primary metric once, and with seed SD ≈ 57 most tuning effects
+> will be smaller than the noise. The expected outcome is a winner that looks good in the search and does not
+> clearly survive confirmation. That would be reported as the result.
+
 ## P1 result: multi-seed replication
 
 Preset `ppo_1h`, seeds 1, 2 and 3, standard evaluation. Raw JSON in [docs/results/seeds](docs/results/seeds).
