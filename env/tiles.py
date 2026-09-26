@@ -274,6 +274,7 @@ class TileMarioEnv:
         coin_reward: float = 15.0,
         flag_reward: float = 150.0,
         obs_version: int = 2,
+        obs_prev_action: bool = True,  # False = ablation: hide the previous action from the observation
         reward_version: int = 2,
         death_reward: float = -150.0,
         hurt_reward: float = -50.0,
@@ -304,6 +305,7 @@ class TileMarioEnv:
         self._archive: dict[str, list] = {}  # stage -> [(noops, joypad action prefix)] just before recent deaths
         self.mode = MODES[0]
         self.obs_version, self.reward_version = obs_version, reward_version
+        self._obs_prev_action = obs_prev_action
         self.uses_modes = reward_version >= 4
         self.n_extras = n_extras(self.n_actions, obs_version, self.uses_modes)
         self._skip, self._stack = skip, stack
@@ -567,7 +569,11 @@ class TileMarioEnv:
         ram = self.ram
         obs = {
             "tiles": np.stack(self._grids),
-            "extras": read_extras(ram, self._prev_action, self.n_actions, self.obs_version),
+            # obs_prev_action=False is the ablation: feed -1 so the one-hot stays all zeros. The slot is kept
+            # rather than removed, so n_extras, every tensor shape and the learning hash are unchanged and the
+            # two arms differ only in whether that information is present.
+            "extras": read_extras(ram, self._prev_action if self._obs_prev_action else -1,
+                                  self.n_actions, self.obs_version),
         }
         if self.obs_version >= 3:
             obs["enemy_ids"], obs["enemy_states"], obs["enemies"] = read_enemies(ram)
