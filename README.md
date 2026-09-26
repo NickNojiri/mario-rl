@@ -76,13 +76,16 @@ Things that are wrong or unmeasured, listed so they are not mistaken for settled
   See [how much the seed matters](#how-much-does-the-seed-matter-revising-the-previous-estimate).
 - **The held-out set has been used for model selection.** Checkpoints and settings were chosen after looking at
   held-out scores, so those 5 stages are really a validation set and 671/674 are optimistically biased. There is
-  no spare real level: 32 total = 22 train + 5 held out + 5 excluded (water physics, looping mazes).
+  no spare level in SMB itself (32 total = 22 train + 5 held out + 5 excluded), but Lost Levels worlds 1–4 give
+  16 untouched stages, and `scripts/probe_lost_levels.py` verified the RAM map on all 16. They are the intended
+  final test set; nothing has been evaluated on them yet.
 - **The scripted baseline beats the agent on one held-out level.** On 7-1 the scripted policy reaches 728 while
   the sampled agent reaches 609 (the greedy agent reaches 861). The scripted policy is also deterministic, so
   three of the five held-out stages produced a single unique trajectory: those per-stage numbers are precise but
   are not five independent samples.
-- **x_pos is not normalized by level length**, so averaging across stages of different lengths silently weights
-  the long ones.
+- **Length normalization only covers stages the agent has finished.** `progress_fraction` uses flagpole positions
+  measured from the emulator ([ADR-0003](docs/adr/0003-measure-stage-lengths-from-the-emulator.md)), 7 of 32 so
+  far. No held-out stage has been finished, so held-out results are still reported in raw x_pos.
 - **Sampled vs greedy was not reported until late.** Every historical number above is the sampled policy. On
   `gen2` at 15M, greedy scores 1020 against 671 sampled.
 - **No held-out level has ever been completed**, in any run, at any checkpoint.
