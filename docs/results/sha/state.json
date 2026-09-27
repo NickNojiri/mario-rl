@@ -1,0 +1,1363 @@
+{
+  "prefix": "sha",
+  "budgets": [
+    250000,
+    750000,
+    2250000
+  ],
+  "eta": 3,
+  "search_seed": 100,
+  "base_preset": "ppo_ablate_2m",
+  "trials": {
+    "t00": {
+      "name": "t00",
+      "overrides": {},
+      "note": "default config (no overrides)",
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 458.76000000000005,
+          "summary": {
+            "mean_x_pos": 458.76000000000005,
+            "flag_rate": 0.0,
+            "mean_coins": 0.13999999999999999,
+            "stall_rate": 0.0,
+            "mean_game_reward": 390.91999999999996,
+            "pit_death_rate": 0.56,
+            "enemy_death_rate": 0.42000000000000004,
+            "left_share": 0.001581011804561959,
+            "noop_share": 0.002446048230945256,
+            "points_per_episode": 76.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "14:03"
+        },
+        "1": {
+          "budget": 750000,
+          "score": 438.96000000000004,
+          "summary": {
+            "mean_x_pos": 438.96000000000004,
+            "flag_rate": 0.0,
+            "mean_coins": 0.10666666666666666,
+            "stall_rate": 0.026666666666666665,
+            "mean_game_reward": 371.17333333333335,
+            "pit_death_rate": 0.4533333333333333,
+            "enemy_death_rate": 0.49333333333333335,
+            "left_share": 0.0,
+            "noop_share": 0.0,
+            "points_per_episode": 49.33333333333333,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "18:04"
+        }
+      }
+    },
+    "t01": {
+      "name": "t01",
+      "overrides": {
+        "lr": 0.000699,
+        "ent_coef": 0.0253,
+        "clip": 0.2,
+        "gamma": 0.95,
+        "gae_lambda": 0.95,
+        "epochs": 6,
+        "minibatches": 6,
+        "rollout_len": 256,
+        "vf_coef": 0.5,
+        "plr": true
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 496.76000000000005,
+          "summary": {
+            "mean_x_pos": 496.76000000000005,
+            "flag_rate": 0.0,
+            "mean_coins": 0.2,
+            "stall_rate": 0.0,
+            "mean_game_reward": 428.85999999999996,
+            "pit_death_rate": 0.52,
+            "enemy_death_rate": 0.45999999999999996,
+            "left_share": 0.07115776259378001,
+            "noop_share": 0.04923140089039703,
+            "points_per_episode": 50.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "14:12"
+        },
+        "1": {
+          "budget": 750000,
+          "score": 662.6133333333333,
+          "summary": {
+            "mean_x_pos": 662.6133333333333,
+            "flag_rate": 0.0,
+            "mean_coins": 0.5866666666666667,
+            "stall_rate": 0.0,
+            "mean_game_reward": 589.3866666666667,
+            "pit_death_rate": 0.4,
+            "enemy_death_rate": 0.49333333333333335,
+            "left_share": 0.06970598214813216,
+            "noop_share": 0.10492956316746253,
+            "points_per_episode": 148.0,
+            "hurts_per_episode": 0.013333333333333332,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "17:13"
+        },
+        "2": {
+          "budget": 2250000,
+          "score": 550.01,
+          "summary": {
+            "mean_x_pos": 550.01,
+            "flag_rate": 0.0,
+            "mean_coins": 0.19,
+            "stall_rate": 0.01,
+            "mean_game_reward": 479.26000000000005,
+            "pit_death_rate": 0.43,
+            "enemy_death_rate": 0.5,
+            "left_share": 0.07581042771938593,
+            "noop_share": 0.11098033628095787,
+            "points_per_episode": 80.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "21:07"
+        }
+      }
+    },
+    "t02": {
+      "name": "t02",
+      "overrides": {
+        "lr": 0.000383,
+        "ent_coef": 0.0386,
+        "clip": 0.3,
+        "gamma": 0.97,
+        "gae_lambda": 0.95,
+        "epochs": 3,
+        "minibatches": 4,
+        "rollout_len": 512,
+        "vf_coef": 0.5,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 402.0,
+          "summary": {
+            "mean_x_pos": 402.0,
+            "flag_rate": 0.0,
+            "mean_coins": 0.18,
+            "stall_rate": 0.0,
+            "mean_game_reward": 334.14,
+            "pit_death_rate": 0.52,
+            "enemy_death_rate": 0.48,
+            "left_share": 0.02482180355840389,
+            "noop_share": 0.09715572961604811,
+            "points_per_episode": 88.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "14:19"
+        }
+      }
+    },
+    "t03": {
+      "name": "t03",
+      "overrides": {
+        "lr": 0.000204,
+        "ent_coef": 0.0234,
+        "clip": 0.3,
+        "gamma": 0.99,
+        "gae_lambda": 0.95,
+        "epochs": 2,
+        "minibatches": 6,
+        "rollout_len": 256,
+        "vf_coef": 0.5,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 387.18,
+          "summary": {
+            "mean_x_pos": 387.18,
+            "flag_rate": 0.0,
+            "mean_coins": 0.02,
+            "stall_rate": 0.0,
+            "mean_game_reward": 320.52,
+            "pit_death_rate": 0.58,
+            "enemy_death_rate": 0.42000000000000004,
+            "left_share": 0.019243897116391066,
+            "noop_share": 0.04682921326350118,
+            "points_per_episode": 88.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "14:26"
+        }
+      }
+    },
+    "t04": {
+      "name": "t04",
+      "overrides": {
+        "lr": 0.000926,
+        "ent_coef": 0.0115,
+        "clip": 0.3,
+        "gamma": 0.99,
+        "gae_lambda": 0.9,
+        "epochs": 2,
+        "minibatches": 4,
+        "rollout_len": 512,
+        "vf_coef": 0.5,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 460.43999999999994,
+          "summary": {
+            "mean_x_pos": 460.43999999999994,
+            "flag_rate": 0.0,
+            "mean_coins": 0.12,
+            "stall_rate": 0.0,
+            "mean_game_reward": 392.82,
+            "pit_death_rate": 0.52,
+            "enemy_death_rate": 0.4600000000000001,
+            "left_share": 0.01760829035705741,
+            "noop_share": 0.027250727340637014,
+            "points_per_episode": 108.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "14:32"
+        },
+        "1": {
+          "budget": 750000,
+          "score": 409.84,
+          "summary": {
+            "mean_x_pos": 409.84,
+            "flag_rate": 0.0,
+            "mean_coins": 0.14666666666666667,
+            "stall_rate": 0.0,
+            "mean_game_reward": 343.28000000000003,
+            "pit_death_rate": 0.6,
+            "enemy_death_rate": 0.4,
+            "left_share": 0.004415736224260097,
+            "noop_share": 0.02098079667933548,
+            "points_per_episode": 60.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "17:51"
+        }
+      }
+    },
+    "t05": {
+      "name": "t05",
+      "overrides": {
+        "lr": 0.000409,
+        "ent_coef": 0.0308,
+        "clip": 0.2,
+        "gamma": 0.97,
+        "gae_lambda": 0.98,
+        "epochs": 4,
+        "minibatches": 8,
+        "rollout_len": 128,
+        "vf_coef": 0.25,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 449.48,
+          "summary": {
+            "mean_x_pos": 449.48,
+            "flag_rate": 0.0,
+            "mean_coins": 0.12,
+            "stall_rate": 0.0,
+            "mean_game_reward": 380.00000000000006,
+            "pit_death_rate": 0.5399999999999999,
+            "enemy_death_rate": 0.44000000000000006,
+            "left_share": 0.06894375367775127,
+            "noop_share": 0.11087890036089829,
+            "points_per_episode": 134.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "14:39"
+        },
+        "1": {
+          "budget": 750000,
+          "score": 479.2666666666667,
+          "summary": {
+            "mean_x_pos": 479.2666666666667,
+            "flag_rate": 0.0,
+            "mean_coins": 0.13333333333333336,
+            "stall_rate": 0.0,
+            "mean_game_reward": 410.64,
+            "pit_death_rate": 0.48,
+            "enemy_death_rate": 0.5066666666666666,
+            "left_share": 0.03139320297647617,
+            "noop_share": 0.07750082889471385,
+            "points_per_episode": 60.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "18:17"
+        }
+      }
+    },
+    "t06": {
+      "name": "t06",
+      "overrides": {
+        "lr": 0.000173,
+        "ent_coef": 0.0456,
+        "clip": 0.3,
+        "gamma": 0.995,
+        "gae_lambda": 0.9,
+        "epochs": 2,
+        "minibatches": 6,
+        "rollout_len": 512,
+        "vf_coef": 0.5,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 430.82,
+          "summary": {
+            "mean_x_pos": 430.82,
+            "flag_rate": 0.0,
+            "mean_coins": 0.2,
+            "stall_rate": 0.0,
+            "mean_game_reward": 362.23999999999995,
+            "pit_death_rate": 0.5199999999999999,
+            "enemy_death_rate": 0.45999999999999996,
+            "left_share": 0.04229647503796422,
+            "noop_share": 0.06873659525466762,
+            "points_per_episode": 112.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "14:45"
+        }
+      }
+    },
+    "t07": {
+      "name": "t07",
+      "overrides": {
+        "lr": 0.0002,
+        "ent_coef": 0.0068,
+        "clip": 0.1,
+        "gamma": 0.99,
+        "gae_lambda": 0.98,
+        "epochs": 3,
+        "minibatches": 8,
+        "rollout_len": 512,
+        "vf_coef": 1.0,
+        "plr": true
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 380.5400000000001,
+          "summary": {
+            "mean_x_pos": 380.5400000000001,
+            "flag_rate": 0.0,
+            "mean_coins": 0.02,
+            "stall_rate": 0.02,
+            "mean_game_reward": 313.66,
+            "pit_death_rate": 0.5599999999999999,
+            "enemy_death_rate": 0.42000000000000004,
+            "left_share": 0.012747041927623168,
+            "noop_share": 0.0463224867307133,
+            "points_per_episode": 84.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "14:51"
+        }
+      }
+    },
+    "t08": {
+      "name": "t08",
+      "overrides": {
+        "lr": 0.000279,
+        "ent_coef": 0.0161,
+        "clip": 0.2,
+        "gamma": 0.99,
+        "gae_lambda": 0.98,
+        "epochs": 3,
+        "minibatches": 6,
+        "rollout_len": 128,
+        "vf_coef": 0.25,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 447.16,
+          "summary": {
+            "mean_x_pos": 447.16,
+            "flag_rate": 0.0,
+            "mean_coins": 0.1,
+            "stall_rate": 0.0,
+            "mean_game_reward": 378.34,
+            "pit_death_rate": 0.52,
+            "enemy_death_rate": 0.4800000000000001,
+            "left_share": 0.02381028144802455,
+            "noop_share": 0.028521722485612765,
+            "points_per_episode": 116.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "14:58"
+        },
+        "1": {
+          "budget": 750000,
+          "score": 447.4266666666666,
+          "summary": {
+            "mean_x_pos": 447.4266666666666,
+            "flag_rate": 0.0,
+            "mean_coins": 0.21333333333333332,
+            "stall_rate": 0.013333333333333332,
+            "mean_game_reward": 378.8666666666667,
+            "pit_death_rate": 0.48,
+            "enemy_death_rate": 0.5066666666666666,
+            "left_share": 0.006777212654664111,
+            "noop_share": 0.03721257805935181,
+            "points_per_episode": 69.33333333333334,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "18:43"
+        }
+      }
+    },
+    "t09": {
+      "name": "t09",
+      "overrides": {
+        "lr": 0.000108,
+        "ent_coef": 0.0474,
+        "clip": 0.2,
+        "gamma": 0.995,
+        "gae_lambda": 0.9,
+        "epochs": 2,
+        "minibatches": 8,
+        "rollout_len": 128,
+        "vf_coef": 0.25,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 378.7,
+          "summary": {
+            "mean_x_pos": 378.7,
+            "flag_rate": 0.0,
+            "mean_coins": 0.04,
+            "stall_rate": 0.0,
+            "mean_game_reward": 311.36,
+            "pit_death_rate": 0.6,
+            "enemy_death_rate": 0.4,
+            "left_share": 0.05410550178194845,
+            "noop_share": 0.07188179458585539,
+            "points_per_episode": 180.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "15:03"
+        }
+      }
+    },
+    "t10": {
+      "name": "t10",
+      "overrides": {
+        "lr": 0.000696,
+        "ent_coef": 0.0375,
+        "clip": 0.3,
+        "gamma": 0.995,
+        "gae_lambda": 0.98,
+        "epochs": 4,
+        "minibatches": 8,
+        "rollout_len": 128,
+        "vf_coef": 0.25,
+        "plr": true
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 346.65999999999997,
+          "summary": {
+            "mean_x_pos": 346.65999999999997,
+            "flag_rate": 0.0,
+            "mean_coins": 0.12,
+            "stall_rate": 0.04,
+            "mean_game_reward": 279.70000000000005,
+            "pit_death_rate": 0.54,
+            "enemy_death_rate": 0.42000000000000004,
+            "left_share": 0.0891942536512668,
+            "noop_share": 0.14915292373313044,
+            "points_per_episode": 26.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "15:10"
+        }
+      }
+    },
+    "t11": {
+      "name": "t11",
+      "overrides": {
+        "lr": 0.00038,
+        "ent_coef": 0.0107,
+        "clip": 0.3,
+        "gamma": 0.99,
+        "gae_lambda": 0.9,
+        "epochs": 4,
+        "minibatches": 8,
+        "rollout_len": 128,
+        "vf_coef": 0.5,
+        "plr": true
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 437.8,
+          "summary": {
+            "mean_x_pos": 437.8,
+            "flag_rate": 0.0,
+            "mean_coins": 0.06000000000000001,
+            "stall_rate": 0.02,
+            "mean_game_reward": 366.23999999999995,
+            "pit_death_rate": 0.54,
+            "enemy_death_rate": 0.42000000000000004,
+            "left_share": 0.03663516024619333,
+            "noop_share": 0.2492701810023524,
+            "points_per_episode": 164.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "15:17"
+        }
+      }
+    },
+    "t12": {
+      "name": "t12",
+      "overrides": {
+        "lr": 0.0007,
+        "ent_coef": 0.00594,
+        "clip": 0.3,
+        "gamma": 0.99,
+        "gae_lambda": 0.9,
+        "epochs": 3,
+        "minibatches": 6,
+        "rollout_len": 128,
+        "vf_coef": 0.5,
+        "plr": true
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 423.38,
+          "summary": {
+            "mean_x_pos": 423.38,
+            "flag_rate": 0.0,
+            "mean_coins": 0.08,
+            "stall_rate": 0.0,
+            "mean_game_reward": 357.44000000000005,
+            "pit_death_rate": 0.5599999999999999,
+            "enemy_death_rate": 0.42000000000000004,
+            "left_share": 0.001680672268907563,
+            "noop_share": 0.0029588364684200773,
+            "points_per_episode": 76.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "15:23"
+        }
+      }
+    },
+    "t13": {
+      "name": "t13",
+      "overrides": {
+        "lr": 0.000655,
+        "ent_coef": 0.00398,
+        "clip": 0.1,
+        "gamma": 0.97,
+        "gae_lambda": 0.9,
+        "epochs": 2,
+        "minibatches": 4,
+        "rollout_len": 128,
+        "vf_coef": 1.0,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 440.53999999999996,
+          "summary": {
+            "mean_x_pos": 440.53999999999996,
+            "flag_rate": 0.0,
+            "mean_coins": 0.18,
+            "stall_rate": 0.02,
+            "mean_game_reward": 373.08000000000004,
+            "pit_death_rate": 0.5,
+            "enemy_death_rate": 0.45999999999999996,
+            "left_share": 0.009695767068155923,
+            "noop_share": 0.006230324429591899,
+            "points_per_episode": 134.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "15:29"
+        }
+      }
+    },
+    "t14": {
+      "name": "t14",
+      "overrides": {
+        "lr": 0.000404,
+        "ent_coef": 0.0152,
+        "clip": 0.2,
+        "gamma": 0.95,
+        "gae_lambda": 0.95,
+        "epochs": 2,
+        "minibatches": 4,
+        "rollout_len": 512,
+        "vf_coef": 0.25,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 487.08000000000004,
+          "summary": {
+            "mean_x_pos": 487.08000000000004,
+            "flag_rate": 0.0,
+            "mean_coins": 0.2,
+            "stall_rate": 0.0,
+            "mean_game_reward": 417.7,
+            "pit_death_rate": 0.54,
+            "enemy_death_rate": 0.45999999999999996,
+            "left_share": 0.015924055649204953,
+            "noop_share": 0.029934885215821612,
+            "points_per_episode": 102.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "15:35"
+        },
+        "1": {
+          "budget": 750000,
+          "score": 489.6,
+          "summary": {
+            "mean_x_pos": 489.6,
+            "flag_rate": 0.0,
+            "mean_coins": 0.29333333333333333,
+            "stall_rate": 0.0,
+            "mean_game_reward": 419.9333333333333,
+            "pit_death_rate": 0.5066666666666666,
+            "enemy_death_rate": 0.49333333333333335,
+            "left_share": 0.008231668620471165,
+            "noop_share": 0.043813926925436716,
+            "points_per_episode": 112.0,
+            "hurts_per_episode": 0.013333333333333332,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "17:25"
+        }
+      }
+    },
+    "t15": {
+      "name": "t15",
+      "overrides": {
+        "lr": 0.000914,
+        "ent_coef": 0.00505,
+        "clip": 0.1,
+        "gamma": 0.995,
+        "gae_lambda": 0.9,
+        "epochs": 2,
+        "minibatches": 8,
+        "rollout_len": 128,
+        "vf_coef": 1.0,
+        "plr": true
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 400.74,
+          "summary": {
+            "mean_x_pos": 400.74,
+            "flag_rate": 0.0,
+            "mean_coins": 0.1,
+            "stall_rate": 0.02,
+            "mean_game_reward": 334.18,
+            "pit_death_rate": 0.5599999999999999,
+            "enemy_death_rate": 0.42000000000000004,
+            "left_share": 0.007739953582505736,
+            "noop_share": 0.013898068837846759,
+            "points_per_episode": 102.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "15:41"
+        }
+      }
+    },
+    "t16": {
+      "name": "t16",
+      "overrides": {
+        "lr": 0.000417,
+        "ent_coef": 0.0315,
+        "clip": 0.1,
+        "gamma": 0.97,
+        "gae_lambda": 0.9,
+        "epochs": 4,
+        "minibatches": 6,
+        "rollout_len": 256,
+        "vf_coef": 0.25,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 447.9,
+          "summary": {
+            "mean_x_pos": 447.9,
+            "flag_rate": 0.0,
+            "mean_coins": 0.32,
+            "stall_rate": 0.0,
+            "mean_game_reward": 378.14000000000004,
+            "pit_death_rate": 0.4800000000000001,
+            "enemy_death_rate": 0.52,
+            "left_share": 0.051662624778128476,
+            "noop_share": 0.07293505785180504,
+            "points_per_episode": 148.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "15:48"
+        },
+        "1": {
+          "budget": 750000,
+          "score": 718.8266666666666,
+          "summary": {
+            "mean_x_pos": 718.8266666666666,
+            "flag_rate": 0.0,
+            "mean_coins": 0.18666666666666668,
+            "stall_rate": 0.013333333333333332,
+            "mean_game_reward": 645.9466666666666,
+            "pit_death_rate": 0.48,
+            "enemy_death_rate": 0.4666666666666666,
+            "left_share": 0.025699176999315176,
+            "noop_share": 0.058316402882265736,
+            "points_per_episode": 120.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "18:30"
+        },
+        "2": {
+          "budget": 2250000,
+          "score": 683.16,
+          "summary": {
+            "mean_x_pos": 683.16,
+            "flag_rate": 0.0,
+            "mean_coins": 0.22000000000000003,
+            "stall_rate": 0.04,
+            "mean_game_reward": 610.13,
+            "pit_death_rate": 0.42000000000000004,
+            "enemy_death_rate": 0.41,
+            "left_share": 0.039633491650149844,
+            "noop_share": 0.1893364441392981,
+            "points_per_episode": 111.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "19:32"
+        }
+      }
+    },
+    "t17": {
+      "name": "t17",
+      "overrides": {
+        "lr": 0.000319,
+        "ent_coef": 0.00335,
+        "clip": 0.1,
+        "gamma": 0.995,
+        "gae_lambda": 0.9,
+        "epochs": 4,
+        "minibatches": 6,
+        "rollout_len": 512,
+        "vf_coef": 0.5,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 393.34000000000003,
+          "summary": {
+            "mean_x_pos": 393.34000000000003,
+            "flag_rate": 0.0,
+            "mean_coins": 0.18,
+            "stall_rate": 0.0,
+            "mean_game_reward": 326.28000000000003,
+            "pit_death_rate": 0.5,
+            "enemy_death_rate": 0.5,
+            "left_share": 0.020035616365967117,
+            "noop_share": 0.07486658528733833,
+            "points_per_episode": 66.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "15:55"
+        }
+      }
+    },
+    "t18": {
+      "name": "t18",
+      "overrides": {
+        "lr": 0.000499,
+        "ent_coef": 0.00532,
+        "clip": 0.1,
+        "gamma": 0.97,
+        "gae_lambda": 0.9,
+        "epochs": 4,
+        "minibatches": 8,
+        "rollout_len": 256,
+        "vf_coef": 0.25,
+        "plr": true
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 476.37999999999994,
+          "summary": {
+            "mean_x_pos": 476.37999999999994,
+            "flag_rate": 0.0,
+            "mean_coins": 0.16,
+            "stall_rate": 0.0,
+            "mean_game_reward": 408.34,
+            "pit_death_rate": 0.54,
+            "enemy_death_rate": 0.44000000000000006,
+            "left_share": 0.005365300091022927,
+            "noop_share": 0.028580872081674074,
+            "points_per_episode": 80.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "16:02"
+        },
+        "1": {
+          "budget": 750000,
+          "score": 615.8133333333333,
+          "summary": {
+            "mean_x_pos": 615.8133333333333,
+            "flag_rate": 0.0,
+            "mean_coins": 0.2533333333333333,
+            "stall_rate": 0.0,
+            "mean_game_reward": 545.4399999999999,
+            "pit_death_rate": 0.5333333333333333,
+            "enemy_death_rate": 0.4533333333333333,
+            "left_share": 0.00328313786496243,
+            "noop_share": 0.0323633551379235,
+            "points_per_episode": 88.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "17:39"
+        }
+      }
+    },
+    "t19": {
+      "name": "t19",
+      "overrides": {
+        "lr": 0.000463,
+        "ent_coef": 0.00311,
+        "clip": 0.3,
+        "gamma": 0.995,
+        "gae_lambda": 0.98,
+        "epochs": 4,
+        "minibatches": 8,
+        "rollout_len": 256,
+        "vf_coef": 0.5,
+        "plr": true
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 423.96000000000004,
+          "summary": {
+            "mean_x_pos": 423.96000000000004,
+            "flag_rate": 0.0,
+            "mean_coins": 0.08,
+            "stall_rate": 0.02,
+            "mean_game_reward": 356.76,
+            "pit_death_rate": 0.5,
+            "enemy_death_rate": 0.45999999999999996,
+            "left_share": 0.0034188747485576626,
+            "noop_share": 0.01531755511708598,
+            "points_per_episode": 34.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "16:09"
+        }
+      }
+    },
+    "t20": {
+      "name": "t20",
+      "overrides": {
+        "lr": 0.000142,
+        "ent_coef": 0.021,
+        "clip": 0.2,
+        "gamma": 0.95,
+        "gae_lambda": 0.95,
+        "epochs": 2,
+        "minibatches": 8,
+        "rollout_len": 256,
+        "vf_coef": 0.25,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 425.94000000000005,
+          "summary": {
+            "mean_x_pos": 425.94000000000005,
+            "flag_rate": 0.0,
+            "mean_coins": 0.08,
+            "stall_rate": 0.0,
+            "mean_game_reward": 358.4,
+            "pit_death_rate": 0.5599999999999999,
+            "enemy_death_rate": 0.42000000000000004,
+            "left_share": 0.021032369050263306,
+            "noop_share": 0.036565690616895144,
+            "points_per_episode": 74.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "16:15"
+        }
+      }
+    },
+    "t21": {
+      "name": "t21",
+      "overrides": {
+        "lr": 0.000578,
+        "ent_coef": 0.0116,
+        "clip": 0.3,
+        "gamma": 0.99,
+        "gae_lambda": 0.98,
+        "epochs": 4,
+        "minibatches": 8,
+        "rollout_len": 512,
+        "vf_coef": 1.0,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 428.93999999999994,
+          "summary": {
+            "mean_x_pos": 428.93999999999994,
+            "flag_rate": 0.0,
+            "mean_coins": 0.1,
+            "stall_rate": 0.0,
+            "mean_game_reward": 361.32000000000005,
+            "pit_death_rate": 0.6,
+            "enemy_death_rate": 0.4,
+            "left_share": 0.02916167649502458,
+            "noop_share": 0.035287287267107684,
+            "points_per_episode": 92.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "16:22"
+        }
+      }
+    },
+    "t22": {
+      "name": "t22",
+      "overrides": {
+        "lr": 0.00052,
+        "ent_coef": 0.00894,
+        "clip": 0.2,
+        "gamma": 0.95,
+        "gae_lambda": 0.9,
+        "epochs": 3,
+        "minibatches": 8,
+        "rollout_len": 256,
+        "vf_coef": 0.25,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 446.21999999999997,
+          "summary": {
+            "mean_x_pos": 446.21999999999997,
+            "flag_rate": 0.0,
+            "mean_coins": 0.20000000000000004,
+            "stall_rate": 0.0,
+            "mean_game_reward": 379.9599999999999,
+            "pit_death_rate": 0.5199999999999999,
+            "enemy_death_rate": 0.45999999999999996,
+            "left_share": 0.00895324346730476,
+            "noop_share": 0.06855253634393584,
+            "points_per_episode": 28.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "16:28"
+        },
+        "1": {
+          "budget": 750000,
+          "score": 707.8533333333334,
+          "summary": {
+            "mean_x_pos": 707.8533333333334,
+            "flag_rate": 0.0,
+            "mean_coins": 0.21333333333333332,
+            "stall_rate": 0.013333333333333332,
+            "mean_game_reward": 636.1066666666667,
+            "pit_death_rate": 0.49333333333333335,
+            "enemy_death_rate": 0.4133333333333333,
+            "left_share": 0.03260214026117535,
+            "noop_share": 0.00551643986453817,
+            "points_per_episode": 89.33333333333333,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "18:54"
+        },
+        "2": {
+          "budget": 2250000,
+          "score": 742.5,
+          "summary": {
+            "mean_x_pos": 742.5,
+            "flag_rate": 0.0,
+            "mean_coins": 0.29000000000000004,
+            "stall_rate": 0.01,
+            "mean_game_reward": 670.2800000000001,
+            "pit_death_rate": 0.51,
+            "enemy_death_rate": 0.39,
+            "left_share": 0.03176576124980408,
+            "noop_share": 0.06477002303143074,
+            "points_per_episode": 126.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "20:08"
+        }
+      }
+    },
+    "t23": {
+      "name": "t23",
+      "overrides": {
+        "lr": 0.000167,
+        "ent_coef": 0.0106,
+        "clip": 0.3,
+        "gamma": 0.995,
+        "gae_lambda": 0.9,
+        "epochs": 6,
+        "minibatches": 8,
+        "rollout_len": 512,
+        "vf_coef": 0.5,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 423.46000000000004,
+          "summary": {
+            "mean_x_pos": 423.46000000000004,
+            "flag_rate": 0.0,
+            "mean_coins": 0.08,
+            "stall_rate": 0.0,
+            "mean_game_reward": 356.32,
+            "pit_death_rate": 0.5199999999999999,
+            "enemy_death_rate": 0.4800000000000001,
+            "left_share": 0.01906309317353895,
+            "noop_share": 0.03663976129233461,
+            "points_per_episode": 76.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "16:37"
+        }
+      }
+    },
+    "t24": {
+      "name": "t24",
+      "overrides": {
+        "lr": 0.000146,
+        "ent_coef": 0.00359,
+        "clip": 0.3,
+        "gamma": 0.97,
+        "gae_lambda": 0.95,
+        "epochs": 6,
+        "minibatches": 8,
+        "rollout_len": 512,
+        "vf_coef": 0.25,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 409.52,
+          "summary": {
+            "mean_x_pos": 409.52,
+            "flag_rate": 0.0,
+            "mean_coins": 0.18000000000000002,
+            "stall_rate": 0.0,
+            "mean_game_reward": 342.5,
+            "pit_death_rate": 0.5,
+            "enemy_death_rate": 0.5,
+            "left_share": 0.0011534657951962402,
+            "noop_share": 0.0038650992636783768,
+            "points_per_episode": 70.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "16:45"
+        }
+      }
+    },
+    "t25": {
+      "name": "t25",
+      "overrides": {
+        "lr": 0.000312,
+        "ent_coef": 0.00722,
+        "clip": 0.2,
+        "gamma": 0.95,
+        "gae_lambda": 0.95,
+        "epochs": 3,
+        "minibatches": 8,
+        "rollout_len": 512,
+        "vf_coef": 0.25,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 413.7,
+          "summary": {
+            "mean_x_pos": 413.7,
+            "flag_rate": 0.0,
+            "mean_coins": 0.02,
+            "stall_rate": 0.0,
+            "mean_game_reward": 347.74,
+            "pit_death_rate": 0.58,
+            "enemy_death_rate": 0.4,
+            "left_share": 0.013691984273804114,
+            "noop_share": 0.010488122801834015,
+            "points_per_episode": 34.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "16:51"
+        }
+      }
+    },
+    "t26": {
+      "name": "t26",
+      "overrides": {
+        "lr": 0.00097,
+        "ent_coef": 0.00929,
+        "clip": 0.3,
+        "gamma": 0.995,
+        "gae_lambda": 0.95,
+        "epochs": 2,
+        "minibatches": 4,
+        "rollout_len": 128,
+        "vf_coef": 1.0,
+        "plr": false
+      },
+      "rungs": {
+        "0": {
+          "budget": 250000,
+          "score": 395.06,
+          "summary": {
+            "mean_x_pos": 395.06,
+            "flag_rate": 0.0,
+            "mean_coins": 0.06000000000000001,
+            "stall_rate": 0.0,
+            "mean_game_reward": 328.41999999999996,
+            "pit_death_rate": 0.5599999999999999,
+            "enemy_death_rate": 0.44000000000000006,
+            "left_share": 0.01039590254706534,
+            "noop_share": 0.02684603234737033,
+            "points_per_episode": 72.0,
+            "hurts_per_episode": 0.0,
+            "mean_progress_fraction": null,
+            "stages_with_known_length": 0,
+            "stages": 5
+          },
+          "failed": false,
+          "at": "16:57"
+        }
+      }
+    }
+  },
+  "alive": [
+    "t16",
+    "t22",
+    "t01"
+  ],
+  "started": "2026-09-26T13:55:43-0700",
+  "completed_rung": 2,
+  "winner": "t22",
+  "finished": "2026-09-26T21:07:30-0700",
+  "confirm": {
+    "0": 777.8,
+    "1": 604.24,
+    "2": 850.8799999999999
+  },
+  "confirmation": {
+    "winner": "t22",
+    "overrides": {
+      "lr": 0.00052,
+      "ent_coef": 0.00894,
+      "clip": 0.2,
+      "gamma": 0.95,
+      "gae_lambda": 0.9,
+      "epochs": 3,
+      "minibatches": 8,
+      "rollout_len": 256,
+      "vf_coef": 0.25,
+      "plr": false
+    },
+    "winner_seeds": [
+      777.8,
+      604.24,
+      850.8799999999999
+    ],
+    "default_seeds": [
+      585.58,
+      754.62,
+      645.64
+    ],
+    "diff": 82.3599999999999,
+    "se": 88.30295553125926,
+    "t": 0.9326981130415782,
+    "verdict": "does NOT clearly beat the default"
+  }
+}
