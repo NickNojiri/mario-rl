@@ -3,6 +3,7 @@
     python eval_stages.py runs/ppo_tiles_1/latest.pt                 # train + held-out stages
     python eval_stages.py --random --config runs/ppo_tiles_1/config.json   # random baseline, same protocol
     python eval_stages.py --scripted 14,8 --stages test             # scripted right+jump baseline
+    python eval_stages.py --llm ollama:llama3.2:1b --stages test --workers 1   # pretrained model, zero-shot
     python eval_stages.py runs/ppo_tiles_1/latest.pt --greedy --episodes 20
 
 Reports per-stage and per-group (train vs held-out) progress, flag rate, coins and stall rate. The number
@@ -50,6 +51,13 @@ def _eval_stage(job: dict) -> dict:
     if job.get("scripted"):
         run_a, jump_a = scripted_actions(env.policy_action_names)
 
+    # Pretrained model as a zero-shot player (agent/llm_player.py). It sees the screen as a text map plus the physics
+    # hints, answers with one action name, and is scored with this exact protocol.
+    llm = labels = None
+    if job.get("llm"):
+        from agent.llm_player import action_labels, build_prompt, make_backend
+        llm, labels = make_backend(job["llm"]), action_labels(env.policy_action_names)
+
     eps = []
     for i in range(job["episodes"]):
         seed = job["seed"] + i
@@ -61,6 +69,13 @@ def _eval_stage(job: dict) -> dict:
             if job.get("scripted"):
                 period, hold = job["scripted"]
                 a = jump_a if (len(actions) % period) < hold else run_a
+            elif llm is not None:
+                prompt = build_prompt(obs["tiles"][-1], env.ram, labels, labels[actions[-1]] if actions else None)
+                try:
+                    name = llm.choose(prompt, labels)
+                except Exception:
+                    name = llm.choose(prompt, labels)  # one retry; a second failure stops the evaluation
+                a = labels.index(name)
             elif agent is None:
                 a = int(rng.integers(env.n_policy_actions))
             else:
@@ -82,6 +97,8 @@ def _eval_stage(job: dict) -> dict:
     return {
         "stage": job["stage"], "group": job["group"], "episodes": len(eps),
         "mean_x_pos": float(np.mean([e["x_pos"] for e in eps])),
+        "llm_decisions": len(llm.latencies) if llm else None,
+        "llm_mean_latency_s": float(np.mean(llm.latencies)) if llm and llm.latencies else None,
         "flag_x": job.get("flag_x"),
         "mean_progress_fraction": float(np.mean(fractions)) if fractions else None,
         "std_x_pos": float(np.std([e["x_pos"] for e in eps])),
@@ -183,6 +200,8 @@ def main():
     p.add_argument("--random", action="store_true", help="uniform random policy baseline")
     p.add_argument("--scripted", metavar="PERIOD,HOLD",
                    help="scripted baseline: run right, holding jump for HOLD of every PERIOD steps (e.g. 12,7)")
+    p.add_argument("--llm", metavar="BACKEND",
+                   help="pretrained model as a zero-shot player, e.g. ollama:llama3.2:1b (see agent/llm_player.py)")
     p.add_argument("--config", type=Path, help="config.json for --random (defaults to ppo_full)")
     p.add_argument("--stages", default="all", help="all | train | test | comma list like 1-1,2-1")
     p.add_argument("--episodes", type=int, default=10)
@@ -194,9 +213,13 @@ def main():
                    help="play style for mode-conditioned (reward_version 4) checkpoints; ignored by older ones")
     p.add_argument("--out", type=Path)
     args = p.parse_args()
-    if sum([bool(args.checkpoint), args.random, bool(args.scripted)]) != 1:
-        p.error("give exactly one of: a checkpoint, --random, or --scripted")
+    if sum([bool(args.checkpoint), args.random, bool(args.scripted), bool(args.llm)]) != 1:
+        p.error("give exactly one of: a checkpoint, --random, --scripted, or --llm")
     scripted = parse_scripted(args.scripted) if args.scripted else None
+    llm_info = None
+    if args.llm:  # fail fast, before any worker starts, and record exactly which model was used
+        from agent.llm_player import make_backend
+        llm_info = make_backend(args.llm).info()
 
     import torch
 
@@ -220,14 +243,15 @@ def main():
     lengths = load_stage_lengths()
     jobs = [{"stage": s, "group": g, "config": cfg.to_dict(), "episodes": args.episodes, "seed": args.seed,
              "greedy": args.greedy, "checkpoint": str(args.checkpoint) if args.checkpoint else None,
-             "mode": args.mode, "flag_x": lengths.get(s), "scripted": scripted}
+             "mode": args.mode, "flag_x": lengths.get(s), "scripted": scripted, "llm": args.llm}
             for s, g in chosen]
     with mp.get_context("forkserver").Pool(min(args.workers, len(jobs))) as pool:
         rows = pool.map(_eval_stage, jobs)
 
     result = {
-        "policy": f"scripted:{args.scripted}" if scripted else "random" if args.random else str(args.checkpoint),
-        "scripted": scripted,
+        "policy": (f"scripted:{args.scripted}" if scripted else f"llm:{args.llm}" if args.llm
+                   else "random" if args.random else str(args.checkpoint)),
+        "scripted": scripted, "llm": llm_info,
         "greedy": args.greedy, "episodes_per_stage": args.episodes, "base_seed": args.seed,
         "noop_max": args.noop_max, "mode": args.mode if cfg.reward_version >= 4 else None,
         "train_summary": summarize(rows, "train"), "test_summary": summarize(rows, "test"),
@@ -239,7 +263,9 @@ def main():
               f"coins={r['mean_coins']:.1f} stall={r['stall_rate']:.2f} unique={r['unique_trajectories']}")
     print("train:", result["train_summary"])
     print("test: ", result["test_summary"])
-    who = f"scripted_{args.scripted.replace(',', '_')}" if scripted else "random" if args.random else "policy"
+    who = (f"scripted_{args.scripted.replace(',', '_')}" if scripted
+           else "llm_" + args.llm.replace(":", "_").replace("/", "_") if args.llm
+           else "random" if args.random else "policy")
     out = args.out or ((args.checkpoint.parent if args.checkpoint else Path("runs")) /
                        f"eval_stages_{who}{'_greedy' if args.greedy else ''}.json")
     out.parent.mkdir(parents=True, exist_ok=True)
