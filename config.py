@@ -103,6 +103,10 @@ class PPOConfig:
     # Ablation switch (Wenlu's suggested experiment): False hides the previous action from the observation.
     # The slot is zeroed rather than removed, so shapes and the learning hash are unaffected at the default.
     obs_prev_action: bool = True
+    # Extra context. obs_lookahead: columns past the screen's right edge that the game has already loaded (0-8);
+    # unrendered ones are masked. obs_hints: physics hints plus "where would a jump land now". Both default off.
+    obs_lookahead: int = 0
+    obs_hints: bool = False
     reward_version: int = 2
     death_reward: float = -150.0
     hurt_reward: float = -50.0
@@ -149,6 +153,7 @@ class PPOConfig:
                     no_progress_steps=self.no_progress_steps, noop_max=self.noop_max,
                     coin_reward=self.coin_reward, flag_reward=self.flag_reward,
                     obs_version=self.obs_version, obs_prev_action=self.obs_prev_action,
+                    lookahead=self.obs_lookahead, hints=self.obs_hints,
                     reward_version=self.reward_version,
                     death_reward=self.death_reward, hurt_reward=self.hurt_reward,
                     points_per_100=self.points_per_100, points_cap=self.points_cap,
@@ -159,6 +164,11 @@ class PPOConfig:
     def resolved_stages(self) -> tuple[list, list]:
         from env.tiles import TEST_STAGES, TRAIN_STAGES
         return list(self.train_stages or TRAIN_STAGES), list(self.test_stages or TEST_STAGES)
+
+    def n_extras(self) -> int:
+        """Width of the extras vector this config produces; the one place callers should get it from."""
+        from env.tiles import ACTION_SETS, n_extras
+        return n_extras(len(ACTION_SETS[self.actions]), self.obs_version, self.reward_version >= 4, self.obs_hints)
 
     def learning_hash(self) -> str:
         # Fields added after v2 are left out while at their v2-compatible defaults, so v2 checkpoints keep
@@ -178,7 +188,8 @@ class PPOConfig:
 
 PPO_BOOKKEEPING_FIELDS = frozenset(
     {"total_steps", "save_every", "snapshot_every", "device", "torch_threads", "rollout_threads"})
-V3_FIELD_DEFAULTS = {"obs_version": 2, "obs_prev_action": True, "reward_version": 2,
+V3_FIELD_DEFAULTS = {"obs_version": 2, "obs_prev_action": True, "obs_lookahead": 0, "obs_hints": False,
+                     "reward_version": 2,
                      "death_reward": -150.0, "hurt_reward": -50.0,
                      "points_per_100": 5.0, "points_cap": 150.0, "mode_safe_prob": 0.5, "practice_prob": 0.0,
                      "plr": False, "plr_uniform_mix": 0.5, "plr_rank_beta": 0.3, "procgen_prob": 0.0,

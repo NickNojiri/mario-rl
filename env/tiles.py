@@ -52,6 +52,13 @@ ENEMY_BASE = 256
 N_ENEMY_TYPES = 64
 MARIO_ID = ENEMY_BASE + N_ENEMY_TYPES
 VOCAB = MARIO_ID + 1
+# Look-ahead (obs_lookahead > 0): extra columns past the screen's right edge, read from the metatile buffer the game
+# has already filled. Columns it has not rendered yet still hold terrain from two screens back, so they are shown
+# as UNKNOWN_ID instead. This id only exists when look-ahead is on, so VOCAB and every older checkpoint are unchanged.
+UNKNOWN_ID = VOCAB
+# The game renders up to 8 columns past the right edge, but measured while running through 1-1 and 4-1 only 6 are
+# ready at the median (min 6, max 8); the rest are masked. So lookahead=8 gives 6-8 real columns in practice.
+MAX_LOOKAHEAD = 8
 N_ENEMY_SLOTS = 6
 EMPTY_ENEMY_ID = N_ENEMY_TYPES  # embedding index for an empty slot
 N_ENEMY_FEATS = 6
@@ -68,6 +75,12 @@ N_HINTS = 9
 MODES = ("safe", "insane")
 # Measured max horizontal jump distance in px (scripts/jump_physics.py, 8-1 and 3-2 agree).
 JUMP_PX = {"walk_tap": 42, "walk_max": 83, "run_tap": 70, "run_max": 156}
+# Full-hold jump distance by takeoff speed (RAM 0x57 units), re-measured 2026-09-28 with scripts/jump_physics.py on
+# 8-1 and 3-2, which agree exactly: 3.3 / 5.2 / 5.2 / 9.7 / 9.8 tiles. 28 is top walking speed, 48 top running
+# speed. Between measured speeds the distance is linearly interpolated, which is an approximation: the walk-to-run
+# step (28 -> 40) is not linear in the game.
+JUMP_BY_SPEED = ((0, 53), (24, 83), (28, 83), (40, 155), (48, 157))
+N_LANDING = 4
 # reward_version 4: per-mode weights. safe = survive and collect; insane = speedrun.
 MODE_WEIGHTS = {
     "safe": dict(progress=1.0, time=0.5, death=-300.0, hurt=-100.0, points_per_100=10.0, points_cap=300.0,
@@ -96,10 +109,12 @@ TRAIN_STAGES = [s for s in ALL_STAGES if s not in EXCLUDED_STAGES and s not in T
 PROCGEN_BASE_STAGES = ["1-1", "1-3", "3-1", "3-2", "4-1", "5-1", "5-2", "5-3", "6-1", "6-3", "8-1", "8-2", "8-3"]
 
 
-def n_extras(n_actions: int, obs_version: int = 2, modes: bool = False) -> int:
-    """modes=True adds the play-style one-hot (only used by reward_version 4)."""
+def n_extras(n_actions: int, obs_version: int = 2, modes: bool = False, hints: bool = False) -> int:
+    """modes=True adds the play-style one-hot (only used by reward_version 4). hints=True adds the v4 physics hints
+    (if obs_version < 4 did not already) plus the landing hints."""
     return (n_actions + 2 + N_FLOAT_STATES + N_POWERUPS + (3 if obs_version >= 3 else 0)
-            + (N_HINTS if obs_version >= 4 else 0) + (len(MODES) if modes else 0))
+            + (N_HINTS if obs_version >= 4 or hints else 0) + (N_LANDING if hints else 0)
+            + (len(MODES) if modes else 0))
 
 
 def _s8(v) -> int:
@@ -116,14 +131,31 @@ def mario_level_xy(ram) -> tuple[int, int]:
     return int(ram[0x6D]) * 256 + int(ram[0x86]), int(ram[0xCE]) + 16
 
 
-def read_tile_grid(ram) -> np.ndarray:
-    """13x16 grid of what is on screen right now."""
+def render_col(ram) -> int:
+    """Level column the game will render next; every column before it holds current terrain."""
+    return int(ram[0x0725]) * 16 + int(ram[0x0726])
+
+
+def read_tile_grid(ram, lookahead: int = 0) -> np.ndarray:
+    """13x(16 + lookahead) grid: what is on screen right now, plus `lookahead` columns past the right edge.
+
+    The metatile buffer is two screens wide and circular, and the game fills it about 8 columns ahead of the right
+    edge. A look-ahead column the game has not rendered yet still holds terrain from two screens back, which would
+    show the agent the wrong level, so it is masked as UNKNOWN_ID. Enemies and Mario are only drawn on screen:
+    enemies past the right edge are not reliably spawned yet.
+    """
+    if not 0 <= lookahead <= MAX_LOOKAHEAD:
+        raise ValueError(f"lookahead must be 0..{MAX_LOOKAHEAD}, got {lookahead}")
     left = screen_left_x(ram)
-    level_x = left + np.arange(COLS) * 16 + 8  # sample each column at its center
+    level_x = left + np.arange(COLS + lookahead) * 16 + 8  # sample each column at its center
     page = (level_x // 256) % 2
     col = (level_x % 256) // 16
     addr = 0x500 + page[None, :] * 208 + np.arange(ROWS)[:, None] * 16 + col[None, :]
     grid = ram[addr].astype(np.int16)
+    if lookahead:
+        stale = level_x // 16 >= render_col(ram)
+        stale[:COLS] = False  # the visible screen is always rendered
+        grid[:, stale] = UNKNOWN_ID
 
     for i in range(5):
         if ram[0x0F + i] == 0 or ram[0xB6 + i] != 1:  # inactive or not on the visible screen
@@ -246,6 +278,52 @@ def read_hints(ram) -> np.ndarray:
     return out
 
 
+def full_jump_px(speed_units: float) -> float:
+    """Horizontal distance of a full-hold jump taken at this speed (JUMP_BY_SPEED, measured)."""
+    xs, ys = zip(*JUMP_BY_SPEED)
+    return float(np.interp(abs(speed_units), xs, ys))
+
+
+def read_landing_hints(ram) -> np.ndarray:
+    """"If I jump now, where do I land?" and "how soon do I walk off?" -- the two questions behind pit deaths.
+
+      0 landing is safe: 1 if a full jump taken now lands on something solid (0 if unsafe or not yet visible)
+      1 reach: that jump's horizontal distance at the current speed, as a fraction of 10 tiles
+      2 walk-off alarm: 1 / (1 + agent steps until Mario's front passes the next pit edge at this speed); 0 if no
+        pit within 10 tiles or not moving right
+      3 landing visible: 1 if the landing column has been rendered, so hint 0 is based on real terrain
+
+    Only horizontal speed is used; a jump from mid-air or under a ceiling is not modelled. All 0 while Mario is not
+    on the visible screen (dying, pipe transitions)."""
+    out = np.zeros(N_LANDING, np.float32)
+    if ram[0xB5] != 1:
+        return out
+    mx, _ = mario_level_xy(ram)
+    feet_row = int(ram[0xCE]) // 16  # same small-Mario convention as read_hints
+    speed = _s8(ram[0x57])
+    rendered_until = render_col(ram) * 16
+
+    reach = full_jump_px(speed) if speed >= 0 else full_jump_px(0)
+    land_x = mx + reach + 8  # centre of the 16 px sprite at landing
+    out[1] = min(reach / 160.0, 1.0)
+    if land_x < rendered_until:
+        out[3] = 1.0
+        # up to 4 tiles above the feet counts as a landing (steps, platforms); nothing below it is a pit
+        out[0] = float(_column_solid_from(ram, int(land_x), feet_row - 4) < 13)
+
+    vx = speed / 16.0  # px per frame
+    if vx > 0.05:
+        front = mx + 12
+        for k in range(0, 160, 8):
+            x = front + k
+            if x >= rendered_until:
+                break
+            if _column_solid_from(ram, x, feet_row) >= 13:
+                out[2] = 1.0 / (1.0 + k / (vx * 4.0))
+                break
+    return out
+
+
 def _find_smb(env):
     """gym's EnvCompatibility reports itself as .unwrapped, so walk .env links to the real SuperMarioBrosEnv."""
     while not hasattr(env, "ram"):
@@ -275,6 +353,8 @@ class TileMarioEnv:
         flag_reward: float = 150.0,
         obs_version: int = 2,
         obs_prev_action: bool = True,  # False = ablation: hide the previous action from the observation
+        lookahead: int = 0,  # extra columns past the screen's right edge (read_tile_grid)
+        hints: bool = False,  # physics hints + landing hints, independent of obs_version
         reward_version: int = 2,
         death_reward: float = -150.0,
         hurt_reward: float = -50.0,
@@ -306,8 +386,11 @@ class TileMarioEnv:
         self.mode = MODES[0]
         self.obs_version, self.reward_version = obs_version, reward_version
         self._obs_prev_action = obs_prev_action
+        if not 0 <= lookahead <= MAX_LOOKAHEAD:
+            raise ValueError(f"lookahead must be 0..{MAX_LOOKAHEAD}, got {lookahead}")
+        self.lookahead, self.hints = lookahead, hints
         self.uses_modes = reward_version >= 4
-        self.n_extras = n_extras(self.n_actions, obs_version, self.uses_modes)
+        self.n_extras = n_extras(self.n_actions, obs_version, self.uses_modes, hints)
         self._skip, self._stack = skip, stack
         self._no_progress_steps, self._noop_max = no_progress_steps, noop_max
         self._coin_reward, self._flag_reward = coin_reward, flag_reward
@@ -412,7 +495,7 @@ class TileMarioEnv:
                                                                    self._clock % 10)):
                     self.ram[addr] = digit
 
-        grid = read_tile_grid(self.ram)
+        grid = read_tile_grid(self.ram, self.lookahead)
         self._grids = [grid] * self._stack
         self._prev_action = prefix[-1] if prefix else -1
         smb = self._smb
@@ -497,7 +580,7 @@ class TileMarioEnv:
             ep["death_cause"] = self._death_cause(info)
             if self._practice_prob > 0 and self._patcher is None:  # generated terrain can't be replayed
                 self._remember_before_death()
-        self._grids = self._grids[1:] + [read_tile_grid(ram)]
+        self._grids = self._grids[1:] + [read_tile_grid(ram, self.lookahead)]
         ep["jumps"] += int(action in self._jump and self._prev_action not in self._jump)
         ep["left_presses"] += int(action in self._left)
         ep["noop_presses"] += int(action in self._noop)
@@ -577,8 +660,10 @@ class TileMarioEnv:
         }
         if self.obs_version >= 3:
             obs["enemy_ids"], obs["enemy_states"], obs["enemies"] = read_enemies(ram)
-        if self.obs_version >= 4:
+        if self.obs_version >= 4 or self.hints:
             parts = [obs["extras"], read_hints(ram)]
+            if self.hints:
+                parts.append(read_landing_hints(ram))
             if self.uses_modes:
                 parts.append(np.array([self.mode == m for m in MODES], np.float32))
             obs["extras"] = np.concatenate(parts)

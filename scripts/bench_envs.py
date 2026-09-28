@@ -32,7 +32,7 @@ import torch
 from agent.ppo import PPOAgent
 from agent.vec_env import SubprocVecEnv
 from config import get_ppo_preset
-from env.tiles import ACTION_SETS, TileMarioEnv, n_extras, n_policy_actions
+from env.tiles import ACTION_SETS, TileMarioEnv, n_policy_actions
 
 FIELDS = ["n_envs", "steps_per_env", "agent_steps", "wall_s", "agent_steps_per_s", "vec_step_s", "emulator_s",
           "obs_build_s", "policy_forward_s", "ipc_contention_s", "preset", "cpu_model", "logical_cores",
@@ -83,8 +83,7 @@ def time_components(cfg, stages, steps: int, warmup: int) -> tuple[float, float]
 
 
 def bench_one(n_envs: int, cfg, cfg_name: str, stages, steps: int, warmup: int) -> dict:
-    agent = PPOAgent(cfg, n_policy_actions(cfg.actions),
-                     n_extras(len(ACTION_SETS[cfg.actions]), cfg.obs_version, cfg.reward_version >= 4))
+    agent = PPOAgent(cfg, n_policy_actions(cfg.actions), cfg.n_extras())
     envs = SubprocVecEnv(n_envs, cfg.env_kwargs(stages))
     try:
         obs = envs.reset(seed=0)

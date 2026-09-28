@@ -13,7 +13,7 @@ import torch
 from agent.ppo import PPOAgent
 from agent.vec_env import SubprocVecEnv
 from config import get_ppo_preset
-from env.tiles import ACTION_SETS, n_extras, n_policy_actions
+from env.tiles import n_policy_actions
 
 N_ACTIONS = 200
 
@@ -29,8 +29,7 @@ def _first_actions(n: int = N_ACTIONS, seed: int = 0) -> np.ndarray:
     torch.manual_seed(cfg.seed)
 
     train_stages, _ = cfg.resolved_stages()
-    n_joy = len(ACTION_SETS[cfg.actions])
-    agent = PPOAgent(cfg, n_policy_actions(cfg.actions), n_extras(n_joy, cfg.obs_version, cfg.reward_version >= 4))
+    agent = PPOAgent(cfg, n_policy_actions(cfg.actions), cfg.n_extras())
     envs = SubprocVecEnv(cfg.n_envs, cfg.env_kwargs(train_stages))
     try:
         obs = envs.reset(seed=cfg.seed * 10_007)
