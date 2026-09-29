@@ -20,8 +20,14 @@ policy unless marked greedy. The random-policy baseline under the same protocol 
 | `v3b_1h` | 7.8M | **674** | 1440 | 11.8% | 0.0% |
 | `gen_1h` | 7.8M | 446 | 757 | 5.0% | 0.0% |
 | `ppo_1h_a` (v2) | 1.7M | 582 | 774 | 1 / 220 eps | 0 / 50 eps |
+| `ppo_1h`, 3 seeds (P1) | 1.7M | 573 (sd 44) | 943 (sd 25) | 2.1% | 0.0% |
+| search winner `t22`, 3 seeds (P3) | 2.0M | 744 (sd 127) | 1423 | 11.1% | 0.0% |
+| default `ppo_ablate_2m`, 3 seeds | 2.0M | 662 (sd 86) | 1080 | 2.0% | 0.0% |
 | scripted right+jump | — | 412 | 540 | 0.0% | 0.0% |
 | random baseline | — | 382 | 443 | 0.0% | 0.0% |
+
+Multi-seed rows are means over seeds. Seed-to-seed spread is about 57 (pooled), so single-seed rows above
+them carry roughly ±80 of uncertainty when compared with each other.
 
 Two baselines, because random is a weak floor. The scripted one runs right and presses jump on a fixed cycle
 without ever reading the observation, so its score is what the level layout gives away for free. Its cycle
@@ -30,6 +36,37 @@ without ever reading the observation, so its score is what the level layout give
 ```bash
 python eval_stages.py --scripted 14,8 --stages test --episodes 10
 ```
+
+### Patch notes — September 2026
+
+**Pause, resume and crash-safe checkpoints** (for the planned week-long run)
+- `.\scripts\pause.ps1 -Run <name>` saves a checkpoint and idles the run at ~0% CPU; `.\scripts\resume.ps1`
+  continues it in place with nothing lost. A reboot while paused resumes from the pause checkpoint.
+- Checkpoints are written atomically, so a crash mid-save can no longer corrupt `latest.pt`.
+- Stop/restart no longer resets prioritized-level-replay scores; they are saved in the checkpoint.
+- Verified: `runs/gen2/latest.pt` (15.0M steps) resumes under today's code with a matching learning hash.
+
+**Extra context options** (off by default; not yet trained with)
+- `obs_lookahead`: up to 8 extra columns past the screen edge from the game's own buffer, unrendered ones
+  masked. Checked against the game: 0.13% of look-ahead cells wrong with masking, 6.7% without.
+- `obs_hints`: physics hints plus "if I jump now, where do I land" and a walk-off alarm, using jump distances
+  re-measured on two stages (3.3 / 5.2 / 9.7 / 9.8 tiles by takeoff speed).
+
+**Zero-shot language-model player** (`eval_stages.py --llm ollama:<model>`)
+- Scores a local model with the standard protocol. On held-out 2-1, one episode each: llama3.2 1B pressed NOOP
+  200 times and never moved; llama3.2 3B moved and died to the first goomba at x 306 (random averages 554
+  there). Anecdotes, not measurements.
+
+**P3: fail-fast hyperparameter search** — 27 configs by successive halving; the winner did **not** clearly beat
+the default on fresh seeds (744 vs 662, t = 0.93). The one consistent pattern was a lower discount factor
+(gamma 0.95 best, 0.995 worst). The winner reached the flag on 11% of training-level episodes against the
+default's 2% at the same budget, with no held-out gain: faster memorization, not better play. Details in
+[P3 result](#p3-result-the-fail-fast-search).
+
+**Measurement and method** — multi-seed replication (P1 held, 3/3 seeds beat both baselines), the
+previous-action ablation (P2: no measurable effect), seed-level variance (pooled SD ≈ 57), a scripted baseline,
+greedy-vs-sampled reporting, the start-delay comparison, level-length normalization from the emulator, a
+throughput profile, run manifests, a determinism test, a Lost Levels test set (16 stages verified), and six ADRs.
 
 ### gen2 — generator v2, 15M steps
 Procedurally generated terrain patched into the real game's collision buffer: harder layouts (up to 6-tile pits),
