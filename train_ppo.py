@@ -110,6 +110,44 @@ def plr_weights(plr_score: dict, train_stages: list, cfg) -> dict:
             for s in train_stages}
 
 
+def roll_back_rows(path: Path, keep) -> int:
+    """Move rows whose step fails keep(step) to <name>_rolled_back.csv; returns how many moved.
+
+    After a crash the run resumes from latest.pt, which can be up to save_every steps old. Rows logged after it
+    describe weights that no longer exist, and leaving them would repeat a stretch of the step column."""
+    path = Path(path)
+    if not path.exists():
+        return 0
+    side = path.with_name(f"{path.stem}_rolled_back{path.suffix}")
+    tmp = path.with_name(path.name + ".tmp")
+    with open(path, newline="") as src, open(tmp, "w", newline="") as dst:
+        reader = csv.reader(src)
+        header = next(reader, None)
+        if header is None or "step" not in header:
+            tmp.unlink()
+            return 0
+        col = header.index("step")
+        out = csv.writer(dst)
+        out.writerow(header)
+        rolled = []
+        for row in reader:
+            if keep(int(float(row[col]))):
+                out.writerow(row)
+            else:
+                rolled.append(row)
+    if not rolled:
+        tmp.unlink()
+        return 0
+    new_side = not side.exists()
+    with open(side, "a", newline="") as f:
+        w = csv.writer(f)
+        if new_side:
+            w.writerow(header)
+        w.writerows(rolled)
+    tmp.replace(path)
+    return len(rolled)
+
+
 def main():
     args = parse_args()
     signal.signal(signal.SIGTERM, signal.default_int_handler)
@@ -172,6 +210,12 @@ def main():
             w.writeheader()
         return f, w
 
+    if args.resume:
+        s = agent.global_step  # update rows end at the checkpoint step; the next rollout's episodes start there
+        moved = (roll_back_rows(run_dir / "updates.csv", lambda step: step <= s)
+                 + roll_back_rows(run_dir / "episodes.csv", lambda step: step < s))
+        if moved:
+            print(f"[resume] {moved} log rows past step {s} moved to *_rolled_back.csv", flush=True)
     upd_file, upd_writer = open_csv("updates.csv", UPDATE_FIELDS)
     ep_file, ep_writer = open_csv("episodes.csv", EPISODE_FIELDS)
 

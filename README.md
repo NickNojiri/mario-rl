@@ -45,6 +45,13 @@ python eval_stages.py --scripted 14,8 --stages test --episodes 10
 - Checkpoints are written atomically, so a crash mid-save can no longer corrupt `latest.pt`.
 - Stop/restart no longer resets prioritized-level-replay scores; they are saved in the checkpoint.
 - Verified: `runs/gen2/latest.pt` (15.0M steps) resumes under today's code with a matching learning hash.
+- **Supervisor for long runs:** `.\scripts\start_week.ps1` runs training with automatic restart after a crash
+  and evaluates every snapshot on the held-out stages as it appears (low priority, and waits while paused).
+  Safe to rerun after a reboot. `.\scripts\week_status.ps1` shows where it is and the held-out curve so far.
+- After a crash, log rows written after the last checkpoint are moved to `*_rolled_back.csv`, so the step
+  column never repeats. A health check pauses the run if a loss goes non-finite.
+- Shakedown before launch: a hard kill mid-run, an automatic restart from the checkpoint, and a pause/resume,
+  all checked on a copy of `gen2`. The plan and stop rules are pre-registered as [P4](#p4--the-week-long-run-week1).
 
 **Extra context options** (off by default; not yet trained with)
 - `obs_lookahead`: up to 8 extra columns past the screen edge from the game's own buffer, unrendered ones
@@ -230,6 +237,41 @@ reported rather than quietly substituted.
 > clearly survive confirmation. That would be reported as the result.
 >
 > **Outcome: falsified, t = 0.93** — the expected outcome. See [below](#p3-result-the-fail-fast-search).
+
+### P4 — the week-long run (`week1`)
+
+> **Prediction:** continuing `gen2` from 15.0M to **300M steps** raises held-out mean x_pos, judged on the
+> **last three checkpoints of each run** with a Welch t-test, **t ≥ 2**. The `gen2` side is fixed now:
+> 12M / 14M / 15M score **506.6 / 718.9 / 670.5** (mean 632.0, SD 111.2). The `week1` side is its 280M,
+> 290M and 300M snapshots.
+>
+> **Why three checkpoints, not the final one:** checkpoints of the same run differ far more than one
+> evaluation's noise. `gen2`'s last three spread with SD 111, while each evaluation's own standard error is
+> 28–51; the shakedown's snapshots 200k steps apart scored 782.7, 663.7 and 631.9. A single final snapshot
+> would mostly measure where the policy happened to be that hour. If `week1`'s checkpoints vary as much as
+> `gen2`'s, t ≥ 2 needs a gain of roughly 180.
+>
+> **Why this is worth a week:** `gen2` was still climbing (517 at 7.8M → 671 at 15M), and the procedural-level
+> literature (CoinRun, Procgen) reports generalization appearing at around 200M steps, 13× what any run here
+> has had.
+>
+> **Protocol, fixed now:** `gen2` resumed unchanged (learning hash `ffbd6fc11b73`, same reward, same training
+> `noop_max`), a snapshot every 10M steps, each evaluated on the held-out stages as it appears with the
+> standard protocol (10 episodes per stage, seeds 50000+, start delay 0–30, sampled actions). The final
+> checkpoint gets the same evaluation on all 27 stages. Measured throughput in the shakedown: 613–648
+> steps/s, so the 285M remaining steps are about 5.1–5.4 days before pauses and evaluations.
+>
+> **Stop rules, fixed now:**
+> - automatic: a non-finite loss pauses the run (`ALERT.txt`); three crashes within 30 minutes stop restarts.
+> - futility check at 60M: the same test on the 40M / 50M / 60M snapshots. If it is not t ≥ 2 by then,
+>   continuing is a choice, not the default. This check can only stop the run, never declare success: it is
+>   an extra look at the data, and extra looks inflate false positives.
+>
+> **Falsified if:** t < 2 at 300M. **Caveats:** one seed, so a success shows this run improved, not that the
+> recipe reliably does. And the held-out stages have been used to choose between runs before, so they are
+> closer to a validation set than a clean test set. Baseline evaluations:
+> [`docs/results/p4_baseline/`](docs/results/p4_baseline/) (the 15M one reproduces the earlier 670.54 exactly
+> under today's code).
 
 ## P3 result: the fail-fast search
 
