@@ -117,6 +117,7 @@ class PPOAgent:
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=cfg.lr, eps=1e-5)
         self.global_step = 0
         self.updates = 0
+        self.extra_state: dict = {}
 
     def tensors(self, obs: dict) -> dict:
         return {k: torch.as_tensor(v, device=self.device) for k, v in obs.items()}
@@ -183,15 +184,19 @@ class PPOAgent:
         out["explained_variance"] = float(1 - np.var(batch["returns"] - batch["values"]) / var_y) if var_y > 0 else 0.0
         return out
 
-    def save(self, path: str | Path):
+    def save(self, path: str | Path, extra: dict | None = None):
+        """extra: trainer state that must survive a stop/resume (e.g. prioritized-level-replay scores)."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(path.name + ".tmp")
         torch.save({
             "model": self.net.state_dict(), "optimizer": self.optimizer.state_dict(),
             "global_step": self.global_step, "updates": self.updates,
             "config": self.cfg.to_dict(), "learning_hash": self.cfg.learning_hash(),
             "rng": {"python": random.getstate(), "numpy": np.random.get_state(), "torch": torch.get_rng_state()},
-        }, path)
+            "extra": extra or {},
+        }, tmp)
+        tmp.replace(path)  # atomic: a crash mid-save can never leave a half-written latest.pt
 
     def load(self, path: str | Path, allow_config_change: bool = False):
         ckpt = torch.load(path, map_location=self.device, weights_only=False)
@@ -201,6 +206,7 @@ class PPOAgent:
         self.net.load_state_dict(ckpt["model"])
         self.optimizer.load_state_dict(ckpt["optimizer"])
         self.global_step, self.updates = ckpt["global_step"], ckpt["updates"]
+        self.extra_state = ckpt.get("extra", {})  # absent in checkpoints written before it existed
         random.setstate(ckpt["rng"]["python"])
         np.random.set_state(ckpt["rng"]["numpy"])
         torch.set_rng_state(ckpt["rng"]["torch"])

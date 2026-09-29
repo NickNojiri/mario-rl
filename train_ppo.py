@@ -80,6 +80,36 @@ def parse_set(pairs: list[str]) -> dict:
     return out
 
 
+PAUSE_FILE = "PAUSE"
+
+
+def wait_while_paused(run_dir: Path, on_pause, poll: float = 5.0) -> float:
+    """Block while run_dir/PAUSE exists; returns the seconds spent paused (0.0 if not paused).
+
+    on_pause() runs once before waiting, to write a checkpoint, so even a reboot while paused loses nothing. While
+    this blocks, the env worker processes sit idle on their pipes, so the machine is free to use."""
+    flag = Path(run_dir) / PAUSE_FILE
+    if not flag.exists():
+        return 0.0
+    on_pause()
+    t0 = time.monotonic()
+    print(f"[pause] {flag} found: checkpoint saved, idling until it is removed", flush=True)
+    while flag.exists():
+        time.sleep(poll)
+    paused = time.monotonic() - t0
+    print(f"[resume] after {paused / 60:.1f} min paused", flush=True)
+    return paused
+
+
+def plr_weights(plr_score: dict, train_stages: list, cfg) -> dict:
+    """Rank-based prioritized level replay on mean positive advantage, mixed with uniform."""
+    order = sorted(train_stages, key=lambda s: -plr_score[s])
+    rank_w = {s: (1.0 / (r + 1)) ** (1.0 / cfg.plr_rank_beta) for r, s in enumerate(order)}
+    z = sum(rank_w.values())
+    return {s: cfg.plr_uniform_mix / len(train_stages) + (1 - cfg.plr_uniform_mix) * rank_w[s] / z
+            for s in train_stages}
+
+
 def main():
     args = parse_args()
     signal.signal(signal.SIGTERM, signal.default_int_handler)
@@ -158,11 +188,18 @@ def main():
     remaining = np.zeros(N, np.int64)
     stage_now = [None] * N
     plr_score = {s: 1.0 for s in train_stages}  # EMA of mean positive advantage per stage (learning potential)
+    saved_plr = agent.extra_state.get("plr_score", {})  # restored on resume, so stopping does not reset it
+    plr_score.update({s: v for s, v in saved_plr.items() if s in plr_score})
+    if cfg.plr and saved_plr:
+        envs.set_stage_weights(plr_weights(plr_score, train_stages, cfg))
+    trainer_state = lambda: {"plr_score": dict(plr_score)}
     t_start = time.monotonic()
+    paused_total = 0.0
     last_save = agent.global_step // cfg.save_every
     last_snap = agent.global_step // cfg.snapshot_every
     try:
         while agent.global_step < cfg.total_steps:
+            paused_total += wait_while_paused(run_dir, lambda: agent.save(run_dir / "latest.pt", trainer_state()))
             t_upd = time.monotonic()
             torch.set_num_threads(cfg.rollout_threads)
             episodes = []
@@ -219,12 +256,7 @@ def main():
                     m = buf["decision"] & (stage_of_step == s)
                     if m.any():
                         plr_score[s] = 0.7 * plr_score[s] + 0.3 * float(np.clip(adv[m], 0, None).mean())
-                order = sorted(train_stages, key=lambda s: -plr_score[s])
-                rank_w = {s: (1.0 / (r + 1)) ** (1.0 / cfg.plr_rank_beta) for r, s in enumerate(order)}
-                z = sum(rank_w.values())
-                weights = {s: cfg.plr_uniform_mix / len(train_stages) + (1 - cfg.plr_uniform_mix) * rank_w[s] / z
-                           for s in train_stages}
-                envs.set_stage_weights(weights)
+                envs.set_stage_weights(plr_weights(plr_score, train_stages, cfg))
 
             practice_eps = [e for e in episodes if e.get("practice")]
             gen_eps = [e for e in episodes if e.get("procgen")]
@@ -253,7 +285,7 @@ def main():
                    "real_x_pos": (float(np.mean([e["x_pos"] for e in episodes if not e.get("procgen")]))
                                   if any(not e.get("procgen") for e in episodes) else ""),
                    **{k: round(v, 5) for k, v in stats.items()},
-                   "wall_time": round(time.monotonic() - t_start, 1)}
+                   "wall_time": round(time.monotonic() - t_start - paused_total, 1)}  # training time, pauses excluded
             upd_writer.writerow(row)
             upd_file.flush()
             ep_file.flush()
@@ -261,14 +293,14 @@ def main():
 
             if agent.global_step // cfg.save_every > last_save:
                 last_save = agent.global_step // cfg.save_every
-                agent.save(run_dir / "latest.pt")
+                agent.save(run_dir / "latest.pt", trainer_state())
             if agent.global_step // cfg.snapshot_every > last_snap:
                 last_snap = agent.global_step // cfg.snapshot_every
-                agent.save(run_dir / "snapshots" / f"step_{agent.global_step:09d}.pt")
+                agent.save(run_dir / "snapshots" / f"step_{agent.global_step:09d}.pt", trainer_state())
     except KeyboardInterrupt:
         print("interrupted")
     finally:
-        agent.save(run_dir / "latest.pt")
+        agent.save(run_dir / "latest.pt", trainer_state())
         print(f"[ckpt] final step={agent.global_step} -> {run_dir / 'latest.pt'}", flush=True)
         upd_file.close()
         ep_file.close()
