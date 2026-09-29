@@ -11,6 +11,7 @@ ones worth reading.
 | [0003](0003-measure-stage-lengths-from-the-emulator.md) | Stage lengths are measured from the emulator, never published data | accepted |
 | [0004](0004-ablate-by-zeroing-not-removing.md) | Ablate the previous action by zeroing its slot, not removing it | accepted |
 | [0005](0005-short-screening-runs-only-for-within-distribution-changes.md) | Screen short only for within-distribution changes | accepted |
+| [0006](0006-successive-halving-with-seed-confirmation.md) | Tune by successive halving, then confirm the winner on unseen seeds | accepted |
 
 Related, kept in the README rather than here because they are results rather than decisions:
 [changelog](../../README.md#changelog), [known gaps](../../README.md#known-gaps),

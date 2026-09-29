@@ -171,6 +171,75 @@ reported rather than quietly substituted.
 > matched, the magnitude did not survive contact with seed noise, and the falsification threshold written
 > above turned out to be too lenient — that is recorded rather than quietly reinterpreted.
 
+### P3 — fail-fast hyperparameter search
+
+> **Prediction:** the successive-halving winner, retrained on seeds 0, 1 and 2 at 2M steps, beats the default
+> config on the same seeds and budget (`ppo_ablate_2m`, held-out mean 661.9) with **t ≥ 2**.
+>
+> **Protocol, fixed now:** `python -m scripts.sha_search` — 27 configs (trial 0 is the default), eta 3, rungs at
+> 250k / 750k / 2.25M steps, training seed 100, selection on held-out mean x_pos with 10 / 15 / 20 eval episodes
+> per stage. Then `--confirm`: the winner retrained on seeds 0–2, which the search never used, compared against
+> the existing default runs in `docs/results/prev_action_ablation/prevact_true_s*`. Only optimizer settings
+> and PLR are searched; reward, observation, actions and training `noop_max` are fixed
+> ([ADR-0006](docs/adr/0006-successive-halving-with-seed-confirmation.md)).
+>
+> **Falsified if:** t < 2 in the confirmation. The search's own leaderboard does not count as evidence: the best
+> of 27 noisy single-seed scores is inflated by luck.
+>
+> **Threshold is t ≥ 2, not "one standard error"**, because P2 showed the looser rule was too easy to pass.
+>
+> **Prior: weak.** The 18-variant sweep moved the primary metric once, and with seed SD ≈ 57 most tuning effects
+> will be smaller than the noise. The expected outcome is a winner that looks good in the search and does not
+> clearly survive confirmation. That would be reported as the result.
+>
+> **Outcome: falsified, t = 0.93** — the expected outcome. See [below](#p3-result-the-fail-fast-search).
+
+## P3 result: the fail-fast search
+
+27 configs, 27 → 9 → 3 → 1, about 10 hours including evaluation. Full state and the confirmation evals are in
+[docs/results/sha](docs/results/sha).
+
+**The winner did not clearly beat the default.** Trial `t22` (lr 5.2e-4, ent_coef 0.009, gamma 0.95,
+gae_lambda 0.9, epochs 3, minibatches 8, vf_coef 0.25) retrained on seeds the search never used:
+
+| | seed 0 | seed 1 | seed 2 | mean | sd |
+|---|---|---|---|---|---|
+| search winner `t22` | 777.8 | 604.2 | 850.9 | **744.3** | 126.7 |
+| default | 585.6 | 754.6 | 645.6 | **661.9** | 85.7 |
+
++82.4, SE 88.3, **t = 0.93**. The winner's 3-seed mean is the highest held-out figure at 2M steps in this repo,
+and it still cannot be told apart from the default. With per-arm spread this large, resolving a difference of
+~80 would take about **14 seeds per arm** — roughly a day of compute for one comparison on this machine.
+
+**The search mostly ranked noise, and the data shows it.** The eventual winner survived the first cut at rank
+9 of 27, **5.7 points** above the first eliminated config, against eval noise of about ±46. Between rung 0 and
+rung 1 the order of the nine survivors reshuffled almost completely: the two finalists that did best had ranked
+7th and 9th, and the 4th-ranked config fell to last. At 250k steps the ranking carried little information.
+ADR-0006 accepted that early eliminations would be partly random; this measured how random.
+
+**The one pattern that held up across all 27 trials is gamma**, and it was not a surprise. A lower discount
+factor did better at every level:
+
+| gamma | trials | rung-0 mean | reached rung 1 | reached rung 2 |
+|---|---|---|---|---|
+| 0.95 | 5 | 453.9 | 3 | 2 |
+| 0.97 | 6 | 437.6 | 3 | 1 |
+| 0.99 (default) | 8 | 428.0 | 3 | 0 |
+| 0.995 | 8 | 399.1 | **0** | 0 |
+
+None of the eight gamma = 0.995 configs survived the first cut, and all three finalists used 0.95 or 0.97. This matches a hypothesis written down *before* the search: at gamma 0.99 the
+value horizon is about 100 agent steps, roughly 60 tiles of level, while the observation shows about 10 tiles
+ahead, so the critic can only fill the gap on levels it has memorized. A shorter horizon should generalize
+better. No other setting showed a trend of comparable size.
+
+It is still a lead, not a result: every trial varied every parameter at once, each ran one seed, and the
+pattern is read from a search that was not designed to measure it. **The clean test is a gamma-only
+ablation** — 0.99 vs 0.95, everything else default, several seeds — which is the one follow-up this search
+earned.
+
+What the search did deliver is the fail-fast part: it ruled out a region cheaply. Very long horizons
+(gamma 0.995) are consistently worse here, and it took about 7 minutes per config to learn that, not a day.
+
 ## P1 result: multi-seed replication
 
 Preset `ppo_1h`, seeds 1, 2 and 3, standard evaluation. Raw JSON in [docs/results/seeds](docs/results/seeds).
