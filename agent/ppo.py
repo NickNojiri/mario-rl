@@ -21,17 +21,20 @@ class TilePolicy(nn.Module):
     """Embed tile ids -> small CNN over the 13x16 grid -> concat extras (and pooled enemy encodings) ->
     policy logits and value. forward() takes the observation dict as tensors."""
 
-    def __init__(self, n_actions: int, stack: int, n_extras: int, emb_dim: int = 8, obs_version: int = 2):
+    def __init__(self, n_actions: int, stack: int, n_extras: int, emb_dim: int = 8, obs_version: int = 2,
+                 lookahead: int = 0):
         super().__init__()
         self.obs_version = obs_version
-        self.embed = nn.Embedding(VOCAB, emb_dim)
+        # Look-ahead adds one token (UNKNOWN_ID) and widens the grid; without it the layer shapes are exactly the
+        # old ones, so earlier checkpoints load unchanged.
+        self.embed = nn.Embedding(VOCAB + (1 if lookahead else 0), emb_dim)
         self.conv = nn.Sequential(
             _init(nn.Conv2d(stack * emb_dim, 32, 3, padding=1)), nn.ReLU(),
             _init(nn.Conv2d(32, 64, 3, stride=2, padding=1)), nn.ReLU(),
             _init(nn.Conv2d(64, 64, 3, padding=1)), nn.ReLU(),
             nn.Flatten(),
         )
-        head_in = 64 * ((ROWS + 1) // 2) * ((COLS + 1) // 2) + n_extras
+        head_in = 64 * ((ROWS + 1) // 2) * ((COLS + lookahead + 1) // 2) + n_extras
         if obs_version >= 3:
             # One shared encoder per enemy slot, then max+mean pooling: order-free, any slot count.
             self.enemy_id_embed = nn.Embedding(N_ENEMY_TYPES + 1, 8)
@@ -112,8 +115,8 @@ class PPOAgent:
         self.cfg = cfg
         self.n_actions = n_actions
         self.device = torch.device(cfg.device)
-        self.net = TilePolicy(n_actions, cfg.stack, n_extras, obs_version=getattr(cfg, "obs_version", 2)).to(
-            self.device)
+        self.net = TilePolicy(n_actions, cfg.stack, n_extras, obs_version=getattr(cfg, "obs_version", 2),
+                              lookahead=getattr(cfg, "obs_lookahead", 0)).to(self.device)
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=cfg.lr, eps=1e-5)
         self.global_step = 0
         self.updates = 0

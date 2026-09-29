@@ -22,7 +22,7 @@ import torch
 from agent.ppo import PPOAgent, compute_gae, compute_gae_options
 from agent.vec_env import SubprocVecEnv, stack_obs
 from config import PPO_BOOKKEEPING_FIELDS, PPOConfig, get_ppo_preset
-from env.tiles import ACTION_SETS, MACRO_SETS, n_extras, n_policy_actions
+from env.tiles import ACTION_SETS, MACRO_SETS, n_policy_actions
 from manifest import write_manifest
 
 UPDATE_FIELDS = ["update", "step", "steps_per_sec", "rollout_sec", "learn_sec", "episodes", "mean_x_pos", "flag_rate",
@@ -109,7 +109,7 @@ def main():
     assert not set(train_stages) & set(test_stages), "held-out stages leaked into training"
     n_joy = len(ACTION_SETS[cfg.actions])
     macros = MACRO_SETS.get(cfg.actions, [])
-    agent = PPOAgent(cfg, n_policy_actions(cfg.actions), n_extras(n_joy, cfg.obs_version, cfg.reward_version >= 4))
+    agent = PPOAgent(cfg, n_policy_actions(cfg.actions), cfg.n_extras())
     if args.resume:
         agent.load(args.resume, allow_config_change=args.allow_config_change)
         print(f"resumed step={agent.global_step} updates={agent.updates}")
